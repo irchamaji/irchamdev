@@ -27,6 +27,7 @@ import {
   SiNextdotjs,
   SiFigma,
   SiSupabase,
+  SiReact,
 } from "react-icons/si";
 
 import { FaDiscord, FaGithub, FaLinkedin, FaX, FaThreads, FaInstagram, FaXTwitter, FaFacebook, FaPinterest, FaWhatsapp, FaReddit, FaTelegram, } from "react-icons/fa6";
@@ -64,6 +65,12 @@ export const iconLibrary: Record<string, IconType> = {
   reddit: FaReddit,
   telegram: FaTelegram,
   instagram: FaInstagram,
+  react: SiReact,
+  tanstack: SiReact,
+  tailwindcss: require("react-icons/si").SiTailwindcss,  // dynamic import to avoid tree shaking issues
+  django: require("react-icons/si").SiDjango,  // dynamic import to avoid tree shaking issues
+  postgresql: require("react-icons/si").SiPostgresql,  // dynamic import to avoid tree shaking issues
+  docker: require("react-icons/si").SiDocker,  // dynamic import to avoid tree shaking issues
 };
 
 export type IconLibrary = typeof iconLibrary;

@@ -2,18 +2,18 @@ import { About, Blog, Gallery, Home, Newsletter, Person, Social, Work } from "@/
 import { Line, Row, Text } from "@once-ui-system/core";
 
 const person: Person = {
-  firstName: "Selene",
-  lastName: "Yu",
-  name: `Selene Yu`,
-  role: "Design Engineer",
+  firstName: "Ircham",
+  lastName: "Aji",
+  name: `Ircham Aji`,
+  role: "Software Engineer",
   avatar: "/images/avatar.jpg",
-  email: "example@gmail.com",
+  email: "contact@ircham.dev",
   location: "Asia/Jakarta", // Expecting the IANA time zone identifier, e.g., 'Europe/Vienna'
   languages: ["English", "Bahasa"], // optional: Leave the array empty if you don't want to display languages
 };
 
 const newsletter: Newsletter = {
-  display: true,
+  display: false,
   title: <>Subscribe to {person.firstName}'s Newsletter</>,
   description: <>My weekly newsletter about creativity and engineering</>,
 };
@@ -25,26 +25,26 @@ const social: Social = [
   {
     name: "GitHub",
     icon: "github",
-    link: "https://github.com/once-ui-system",
+    link: "https://github.com/irchamaji",
     essential: true,
   },
   {
     name: "LinkedIn",
     icon: "linkedin",
-    link: "https://www.linkedin.com/company/once-ui/",
+    link: "https://www.linkedin.com/in/ircham-aji/",
     essential: true,
   },
   {
     name: "Instagram",
     icon: "instagram",
-    link: "https://www.instagram.com/once_ui/",
+    link: "https://www.instagram.com/ircham_aji/",
     essential: false,
   },
   {
     name: "Threads",
     icon: "threads",
-    link: "https://www.threads.com/@once_ui",
-    essential: true,
+    link: "https://www.threads.com/@ircham_aji",
+    essential: false,
   },
   {
     name: "Email",
@@ -60,9 +60,9 @@ const home: Home = {
   label: "Home",
   title: `${person.name}'s Portfolio`,
   description: `Portfolio website showcasing my work as a ${person.role}`,
-  headline: <>Building bridges between design and code</>,
+  headline: <>Solving challenges with elegant lines of code</>,
   featured: {
-    display: true,
+    display: false,
     title: (
       <Row gap="12" vertical="center">
         <strong className="ml-4">Once UI</strong>{" "}
@@ -76,9 +76,10 @@ const home: Home = {
   },
   subline: (
     <>
-    I'm Selene, a design engineer at <Text as="span" size="xl" weight="strong">ONCE UI</Text>, where I craft intuitive <br /> user experiences. After hours, I build my own projects.
+      I'm Ircham, a full stack web developer at my own working room, where I craft applications <br /> and automation tools that solve real-world problems.
 </>
   ),
+  
 };
 
 const about: About = {
@@ -87,14 +88,14 @@ const about: About = {
   title: `About – ${person.name}`,
   description: `Meet ${person.name}, ${person.role} from ${person.location}`,
   tableOfContent: {
-    display: true,
+    display: false,
     subItems: false,
   },
   avatar: {
     display: true,
   },
   calendar: {
-    display: true,
+    display: false,
     link: "https://cal.com",
   },
   intro: {
@@ -102,9 +103,10 @@ const about: About = {
     title: "Introduction",
     description: (
       <>
-        Selene is a Jakarta-based design engineer with a passion for transforming complex challenges
-        into simple, elegant design solutions. Her work spans digital interfaces, interactive
-        experiences, and the convergence of design and technology.
+        Hey there! I'm Ircham, a full stack web developer based in Jakarta, 
+        and I thrive on solving complex problems with clean, efficient code. 
+        From building robust backends to crafting seamless frontends, 
+        I enjoy creating tech solutions that just work.
       </>
     ),
   },
@@ -113,44 +115,54 @@ const about: About = {
     title: "Work Experience",
     experiences: [
       {
-        company: "FLY",
-        timeframe: "2022 - Present",
-        role: "Senior Design Engineer",
+        company: "BSSN - Pemerintah Daerah",
+        timeframe: "2025 - Present",
+        role: "Infosec Maturity Assessor",
         achievements: [
+            <>
+            Assessed information security maturity for Pemerintah Daerah in Indonesia at Province and Kabupaten/Kota levels, evaluating compliance and identifying improvement areas to enhance cybersecurity posture.
+            </>,
+            <>
+            Developed a tool for infosec maturity assessment that enables assessors to conduct evaluations and generate reports instantly, reducing report creation time from days to almost instantly.
+            </>,
+        ],
+        images: [],
+      },
+      {
+        company: "BSSN - Politeknik Siber dan Sandi Negara",
+        timeframe: "2023 - 2025",
+        role: "Media and Public Relations",
+        achievements: [
+            <>
+            Designed and executed comprehensive media and public relations strategies for Politeknik Siber dan Sandi Negara, including capturing key moments and managing all PR activities to enhance campus visibility.
+            </>,
+            <>
+            Developed consistent branding designs for the campus's social media platforms, leading to more than 100% increase in new followers through engaging and unified content.
+            </>,
+        ],
+        images: [],
+      },
+      {
+        company: "Badan Siber dan Sandi Negara (BSSN)",
+        timeframe: "2020 - 2023",
+        role: "Cyber Security Analyst",
+        achievements: [
+            <>
+            In this position, I monitored potential cyber incidents, performed initial triage and analysis to facilitate further investigations by other teams. 
+            </>,
           <>
-            Redesigned the UI/UX for the FLY platform, resulting in a 20% increase in user
-            engagement and 30% faster load times.
-          </>,
-          <>
-            Spearheaded the integration of AI tools into design workflows, enabling designers to
-            iterate 50% faster.
+            Additionally, I developed automation tools for daily reporting, enhancing process efficiency and speed.
           </>,
         ],
         images: [
           // optional: leave the array empty if you don't want to display images
-          {
-            src: "/images/projects/project-01/cover-01.jpg",
-            alt: "Once UI Project",
-            width: 16,
-            height: 9,
-          },
+          // {
+          //   src: "/images/projects/project-01/cover-01.jpg",
+          //   alt: "Once UI Project",
+          //   width: 16,
+          //   height: 9,
+          // },
         ],
-      },
-      {
-        company: "Creativ3",
-        timeframe: "2018 - 2022",
-        role: "Lead Designer",
-        achievements: [
-          <>
-            Developed a design system that unified the brand across multiple platforms, improving
-            design consistency by 40%.
-          </>,
-          <>
-            Led a cross-functional team to launch a new product line, contributing to a 15% increase
-            in overall company revenue.
-          </>,
-        ],
-        images: [],
       },
     ],
   },
@@ -159,59 +171,71 @@ const about: About = {
     title: "Studies",
     institutions: [
       {
-        name: "University of Jakarta",
-        description: <>Studied software engineering.</>,
-      },
-      {
-        name: "Build the Future",
-        description: <>Studied online marketing and personal branding.</>,
+      name: "Politeknik Siber dan Sandi Negara",
+      description: <>Applied Bachelor's Degree in (secure) software engineering.</>,
       },
     ],
-  },
-  technical: {
+    },
+    technical: {
     display: true, // set to false to hide this section
     title: "Technical skills",
     skills: [
       {
-        title: "Figma",
+        title: "Frontend Development",
         description: (
-          <>Able to prototype in Figma with Once UI with unnatural speed.</>
+            <>Experienced in building responsive and interactive user interfaces using modern web technologies.</>
         ),
         tags: [
           {
-            name: "Figma",
-            icon: "figma",
+            name: "React",
+            icon: "react",
+          },
+          {
+            name: "Tailwind CSS",
+            icon: "tailwindcss",
           },
         ],
         // optional: leave the array empty if you don't want to display images
         images: [
-          {
-            src: "/images/projects/project-01/cover-02.jpg",
-            alt: "Project image",
-            width: 16,
-            height: 9,
-          },
-          {
-            src: "/images/projects/project-01/cover-03.jpg",
-            alt: "Project image",
-            width: 16,
-            height: 9,
-          },
+          // {
+          //   src: "/images/projects/project-01/cover-02.jpg",
+          //   alt: "Project image",
+          //   width: 16,
+          //   height: 9,
+          // },
         ],
       },
       {
-        title: "Next.js",
+        title: "Backend Development",
         description: (
-          <>Building next gen apps with Next.js + Once UI + Supabase.</>
+            <>Experienced in developing scalable backend services and APIs using frameworks like Django and Next.js, with database management in PostgreSQL.</>
         ),
         tags: [
           {
-            name: "JavaScript",
-            icon: "javascript",
+            name: "Django",
+            icon: "django",
           },
           {
             name: "Next.js",
             icon: "nextjs",
+          },
+          {
+            name: "PostgreSQL",
+            icon: "postgresql",
+          },
+        ],
+        // optional: leave the array empty if you don't want to display images
+        images: [],
+      },
+      {
+        title: "Infrastructure & DevOps",
+        description: (
+            <>Experienced in deploying and managing scalable applications using containerization and cloud services.</>
+        ),
+        tags: [
+          {
+            name: "Docker",
+            icon: "docker",
           },
           {
             name: "Supabase",
@@ -219,14 +243,7 @@ const about: About = {
           },
         ],
         // optional: leave the array empty if you don't want to display images
-        images: [
-          {
-            src: "/images/projects/project-01/cover-04.jpg",
-            alt: "Project image",
-            width: 16,
-            height: 9,
-          },
-        ],
+        images: [],
       },
     ],
   },
