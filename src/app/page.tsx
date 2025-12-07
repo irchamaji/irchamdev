@@ -102,7 +102,8 @@ export default function Home() {
       </Column>
       {/* <RevealFx translateY="16" delay={0.6}>
         <Projects range={[1, 1]} />
-      </RevealFx>
+      </RevealFx> */}
+      {/*
       {routes["/blog"] && (
         <Column fillWidth gap="24" marginBottom="l">
           <Row fillWidth paddingRight="64">
