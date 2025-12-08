@@ -60,7 +60,7 @@ const home: Home = {
   label: "Home",
   title: `${person.name}`,
   description: `Personal website showcasing my work as a ${person.role}`,
-  headline: <>Solving challenges with elegant lines of code</>,
+  headline: <>Software Engineer that turns bugs into features</>,
   featured: {
     display: false,
     title: (
@@ -76,7 +76,7 @@ const home: Home = {
   },
   subline: (
     <>
-      I'm Ircham, a full stack web developer at my own working room, where I craft applications <br /> and automation tools that solve real-world problems.
+      Hi, I'm Ircham, a full stack web developer at my own working room, where I craft applications <br /> and automation tools that solve real-world problems.
 </>
   ),
   
