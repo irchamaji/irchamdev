@@ -157,7 +157,7 @@ const about: About = {
     title: "Studies",
     institutions: [
       {
-      name: "Politeknik Siber dan Sandi Negara",
+      name: "Some Cool Campuss",
       description: <>Applied Bachelor's Degree in (secure) software engineering.</>,
       },
     ],
