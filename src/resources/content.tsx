@@ -115,50 +115,36 @@ const about: About = {
     title: "Work Experience",
     experiences: [
       {
-        company: "BSSN - Pemerintah Daerah",
-        timeframe: "2025 - Present",
-        role: "Infosec Maturity Assessor",
+        company: "Same Cool Organization",
+        timeframe: "2022 - Present",
+        role: "Different role but still IT Guy",
         achievements: [
             <>
-            Assessed information security maturity for Pemerintah Daerah in Indonesia at Province and Kabupaten/Kota levels, evaluating compliance and identifying improvement areas to enhance cybersecurity posture.
+              Basically the same thing as before but with more responsibility and better code quality.
             </>,
             <>
-            Developed a tool for infosec maturity assessment that enables assessors to conduct evaluations and generate reports instantly, reducing report creation time from days to almost instantly.
+              I also did other things.
             </>,
         ],
         images: [],
       },
       {
-        company: "BSSN - Politeknik Siber dan Sandi Negara",
-        timeframe: "2023 - 2025",
-        role: "Media and Public Relations",
+        company: "Some Cool Organization",
+        timeframe: "2020 - 2022",
+        role: "Some IT Guy",
         achievements: [
-            <>
-            Designed and executed comprehensive media and public relations strategies for Politeknik Siber dan Sandi Negara, including capturing key moments and managing all PR activities to enhance campus visibility.
-            </>,
-            <>
-            Developed consistent branding designs for the campus's social media platforms, leading to more than 100% increase in new followers through engaging and unified content.
-            </>,
-        ],
-        images: [],
-      },
-      {
-        company: "Badan Siber dan Sandi Negara (BSSN)",
-        timeframe: "2020 - 2023",
-        role: "Cyber Security Analyst",
-        achievements: [
-            <>
-            In this position, I monitored potential cyber incidents, performed initial triage and analysis to facilitate further investigations by other teams. 
-            </>,
           <>
-            Additionally, I developed automation tools for daily reporting, enhancing process efficiency and speed.
+            I worked as IT Guy. From a simple automation script to a complex information system. Frontend, backend, security, I built it all.
+          </>,
+          <>
+            I did some other stuff too.
           </>,
         ],
         images: [
           // optional: leave the array empty if you don't want to display images
           // {
           //   src: "/images/projects/project-01/cover-01.jpg",
-          //   alt: "Once UI Project",
+          //   alt: "IT Guy Project",
           //   width: 16,
           //   height: 9,
           // },
