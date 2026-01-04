@@ -1,0 +1,66 @@
+---
+title: "Building a Cybersecurity Maturity Measurement Tools"
+publishedAt: "2025-01-04"
+summary: "A comprehensive web application that help the verifier for measuring cybersecurity maturity indices (IKAMI and IKASANDI) that runs entirely in the browser, featuring Excel parsing, automated calculations, and multi-format reporting."
+images:
+  - "/images/projects/pengukuran/cover.jpg"
+  - "/images/projects/pengukuran/dashboard.jpg"
+  - "/images/projects/pengukuran/verification.jpg"
+team:
+  - name: "Ircham"
+    role: "Full-Stack Developer"
+    avatar: "/images/avatar.jpg"
+    linkedIn: "https://www.linkedin.com/in/ircham/"
+link: "https://ptkkss.ircham.dev/"
+---
+
+## Overview
+
+In this project, I developed a comprehensive web application that help the verifier for measuring cybersecurity maturity indices, specifically IKAMI (Indeks KAMI) and IKASANDI, which are Indonesian standards for cybersecurity assessment. The application runs entirely in the browser with no server-side dependencies, using IndexedDB for local data persistence. This approach ensures data privacy and allows the tool to work offline, making it ideal for sensitive cybersecurity assessments.
+
+The system implements a complete verification workflow from Excel data import through automated calculations to multi-format reporting (Excel and Word exports). By leveraging modern web technologies, I created an efficient, user-friendly tool that streamlines the cybersecurity maturity assessment process.
+
+## Important Note
+This tool was developed by the author, who is himself a cybersecurity maturity measurement verifier, as an experimental project to assist in personal verification processes. It is not an official tool endorsed by any regulatory body and should be used at your own discretion for non-official assessments.
+
+## Key Features
+
+- **Excel File Parsing and Validation**: Robust parsing of IKAMI v5.0 format Excel files with comprehensive validation and error handling
+- **Interactive Verification Workflow**: Verification process with real-time auto-save functionality
+- **Complete Calculation Engine**: Official IKAMI methodology implementation with accurate scoring and classification
+- **Multi-Format Export**: Template-based Excel and Word document generation for professional reporting
+- **Database Management**: Full export/import functionality for data backup and migration
+- **Responsive UI**: Modern interface with dark mode support using shadcn/ui components
+- **Offline Capability**: Browser-based operation with IndexedDB for local data storage
+
+## Technologies Used
+
+- **Bun**: Fast JavaScript runtime and bundler for development and production
+- **React 19**: Modern UI framework with hooks for component-based architecture
+- **TypeScript**: Type-safe development for better code reliability
+- **Dexie.js**: IndexedDB wrapper with React hooks for seamless database operations
+- **xlsx & ExcelJS**: Excel file processing for import and export functionality
+- **Docxtemplater**: Word document generation with template support
+- **Tailwind CSS**: Utility-first styling with dark mode support
+- **shadcn/ui**: High-quality UI components built on Radix UI
+- **React Router DOM**: Client-side routing for single-page application navigation
+
+## Challenges and Learnings
+
+One of the primary challenges was implementing the complex IKAMI calculation methodology accurately. The scoring system involves multiple areas with different weighting schemes, conditional logic, and special handling for "Not Applicable" responses. Ensuring calculation accuracy while maintaining performance in the browser required careful optimization of the calculation algorithms.
+
+Another significant challenge was Excel file parsing and validation. Handling various Excel formats, corrupted files, and ensuring data integrity required robust error handling and user feedback systems. The Word document generation with Docxtemplater presented its own complexities, particularly with template syntax and placeholder mapping.
+
+Through this project, I gained deep insights into browser-based database management with IndexedDB, advanced Excel manipulation techniques, and the intricacies of document template systems. The experience reinforced the importance of thorough testing and validation when dealing with critical assessment tools.
+
+## Outcome
+
+The cybersecurity maturity measurement system has successfully automated what was previously a manual, error-prone process. Organizations can now conduct IKAMI and IKASANDI assessments more efficiently, with consistent calculations and professional reporting. The offline capability ensures assessments can be performed in secure environments without internet connectivity.
+
+The application has demonstrated the power of modern web technologies in creating specialized tools that rival traditional desktop software. By choosing a browser-based approach, the system achieves better accessibility, easier deployment, and enhanced data security compared to conventional applications.
+
+This project showcases my ability to build complex, domain-specific applications that solve real-world problems in cybersecurity assessment, combining technical expertise with user experience design.
+
+---
+
+This project highlights expertise in full-stack web development, data processing, and creating specialized tools for professional assessments.

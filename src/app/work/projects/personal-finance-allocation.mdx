@@ -1,0 +1,50 @@
+---
+title: "Personal Finance Allocation Calculator"
+publishedAt: "2026-01-04"
+summary: "A web-based personal finance tool that helps users allocate their income across various financial goals, built with modern React technologies and local storage for complete privacy."
+images:
+  - "/images/projects/finance-calculator/cover.jpg"
+  - "/images/projects/finance-calculator/dashboard.jpg"
+team:
+  - name: "Ircham Aji"
+    role: "Full-Stack Developer"
+    avatar: "/images/avatar.jpg"
+link: "https://finance.ircham.dev/"
+---
+
+## Overview
+
+This personal finance allocation calculator is a web-based application designed to help users manage their income by automatically distributing it across predefined financial objectives. Built as an experimental project for portfolio purposes, it demonstrates modern web development practices with a focus on user experience, data privacy, and clean architecture. The app runs entirely in the browser, storing all data locally using IndexedDB, ensuring no personal financial information is sent to any server.
+
+## Key Features
+
+- **Income Input and Calculation**: Users enter their income amount, and the system automatically calculates allocations based on user-defined objectives, showing exactly where each portion of money should go.
+- **Flexible Allocation Objectives**: Users can create custom financial goals (like emergency funds, investments, monthly expenses, or fun money) and assign either a percentage (proportion) or fixed amount (nominal) to each.
+- **Local Data Storage**: All allocations and settings are stored in the browser's IndexedDB using DexieJS, providing a seamless offline experience with no data transmission to external servers.
+- **Single-Page Application**: The app loads directly to the main interface, offering a streamlined user experience without navigation complexity.
+- **Dark Mode Toggle**: Features a default dark theme with an option to switch to light mode, enhancing usability in different environments.
+- **Responsive Design**: Built with shadcn/ui components and Tailwind CSS for a consistent, accessible interface across devices.
+
+## Technologies Used
+
+- **TanStack Start**: A full-stack React framework for building modern web applications with server-side rendering and routing capabilities.
+- **React & TypeScript**: For building a type-safe, component-based user interface with excellent developer experience.
+- **shadcn/ui**: A collection of reusable UI components built on Radix UI and styled with Tailwind CSS for consistent design.
+- **DexieJS**: A minimalistic wrapper for IndexedDB, providing an easy-to-use API for client-side database operations.
+- **Lucide Icons**: An open-source icon library with 1500+ icons for clean, consistent visual elements.
+- **Tailwind CSS**: For utility-first styling with custom design tokens defined in a centralized styles.css file.
+- **Vite**: A fast build tool and development server for modern web projects.
+
+## Challenges and Learnings
+
+One of the primary challenges was implementing a robust local database schema that could handle dynamic allocation objectives while maintaining data integrity. This required careful design of the IndexedDB structure with proper indexing and relationship management through DexieJS. Additionally, ensuring the calculation logic correctly handled both proportional and nominal allocations without conflicts demanded thorough testing and edge case handling.
+
+The project also highlighted the importance of maintaining design consistency across a component library, which was achieved by centralizing styles in a single CSS file and leveraging shadcn/ui's theming system. Learning to work with IndexedDB for the first time provided valuable insights into client-side data management and offline-first application patterns.
+
+## Outcome
+
+This finance calculator successfully demonstrates the power of modern web technologies in creating privacy-focused, user-friendly financial tools. By keeping all data local and providing an intuitive interface for income allocation, it empowers users to make informed financial decisions. The project serves as a strong portfolio piece, showcasing skills in React development, database integration, UI/UX design, and full-stack web application architecture. While built for personal use and experimentation, it could easily be extended with additional features like expense tracking, budgeting reports, or data export capabilities.
+
+---
+
+This project showcases your expertise in building practical web applications with modern React stacks, emphasizing data privacy, user experience, and clean code architecture—key skills for any full-stack developer portfolio.
