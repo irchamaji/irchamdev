@@ -19,7 +19,7 @@ const baseURL: string = "https://ircham.dev";
 const routes: RoutesConfig = {
   "/": true,
   "/about": true,
-  "/work": false,
+  "/work": true,
   "/blog": false,
   "/gallery": false,
 };
