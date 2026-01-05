@@ -32,7 +32,7 @@ const social: Social = [
     name: "LinkedIn",
     icon: "linkedin",
     link: "https://www.linkedin.com/in/ircham-aji/",
-    essential: true,
+    essential: false,
   },
   {
     name: "Instagram",

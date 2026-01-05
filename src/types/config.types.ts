@@ -143,7 +143,7 @@ export type SchemaConfig = {
  */
 export type SameAsConfig = {
   threads: string;
-  linkedin: string;
+  // linkedin: string;
   discord: string;
 };
 
