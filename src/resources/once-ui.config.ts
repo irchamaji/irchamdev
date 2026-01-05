@@ -196,7 +196,7 @@ const schema: SchemaConfig = {
 // social links
 const sameAs: SameAsConfig = {
   threads: "https://www.threads.com/@ircham_aji",
-  linkedin: "https://www.linkedin.com/in/irchamaji/",
+  // linkedin: "https://www.linkedin.com/in/irchamaji/",
   discord: "https://discord.com/",
 };
 
