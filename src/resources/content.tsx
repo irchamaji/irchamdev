@@ -72,7 +72,7 @@ const home: Home = {
         </Text>
       </Row>
     ),
-    href: "/work/maturity-verification-tools",
+    href: "/work/rinjani",
   },
   subline: (
     <>
