@@ -1,4 +1,4 @@
-import { About, Blog, Gallery, Home, Newsletter, Person, Social, Work } from "@/types";
+import { About, Blog, Gallery, Home, Newsletter, Person, Project, Social } from "@/types";
 import { Line, Row, Text } from "@once-ui-system/core";
 
 const person: Person = {
@@ -244,13 +244,13 @@ const blog: Blog = {
   // All posts will be listed on the /blog route
 };
 
-const work: Work = {
-  path: "/work",
-  label: "Work",
-  title: `Projects – ${person.name}`,
-  description: `Design and dev projects by ${person.name}`,
-  // Create new project pages by adding a new .mdx file to app/blog/posts
-  // All projects will be listed on the /home and /work routes
+const project: Project = {
+  path: "/project",
+  label: "Project",
+  title: `Things I've built`,
+  description: `A peek into some of the projects I've worked on.`,
+  // Create new project pages by adding a new .mdx file to app/project/projects
+  // All projects will be listed on the /home and /project routes
 };
 
 const gallery: Gallery = {
@@ -304,4 +304,4 @@ const gallery: Gallery = {
   ],
 };
 
-export { person, social, newsletter, home, about, blog, work, gallery };
+export { person, social, newsletter, home, about, blog, project, gallery };

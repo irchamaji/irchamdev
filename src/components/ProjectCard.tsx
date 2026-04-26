@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AvatarGroup,
   Carousel,
   Column,
   Flex,
@@ -17,7 +16,6 @@ interface ProjectCardProps {
   title: string;
   content: string;
   description: string;
-  avatars: { src: string }[];
   link: string;
 }
 
@@ -44,7 +42,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   title,
   content,
   description,
-  avatars,
   link,
 }) => {
   const displayLink = link ? link.replace(/^https?:\/\//, '').replace(/\/$/, '') : '';
@@ -69,26 +66,27 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         gap="16"
       >
         {title && (
-          <Heading as="h3" wrap="balance" variant="heading-strong-l">
-            {title}
-          </Heading>
+          <SmartLink href={href} style={{ textDecoration: "none" }}>
+            <Heading as="h3" wrap="balance" variant="heading-strong-l">
+              {title}
+            </Heading>
+          </SmartLink>
         )}
-        {(avatars?.length > 0 || description?.trim() || content?.trim() || link) && (
+        {(description?.trim() || content?.trim() || link) && (
           <Flex direction="column" gap="12">
-            {avatars?.length > 0 && <AvatarGroup avatars={avatars} size="m" reverse />}
             {description?.trim() && (
               <Text wrap="balance" variant="body-default-s" onBackground="neutral-weak">
                 {description}
               </Text>
             )}
-            <Flex gap="16" wrap paddingTop="8">
+            <Flex gap="16" wrap paddingTop="8" horizontal="between">
               {content?.trim() && (
                 <SmartLink
                   suffixIcon="arrowRight"
                   style={{ margin: "0", width: "fit-content" }}
                   href={href}
                 >
-                  <Text variant="body-default-s">Read case study</Text>
+                  <Text variant="body-default-s">Read more</Text>
                 </SmartLink>
               )}
               {link && (
