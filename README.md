@@ -1,6 +1,15 @@
 # Ircham.dev — Personal Portfolio & Engineering Hub
 
-This is the source code for the personal website of **Ircham Aji**, a Software Engineer. Built with a focus on clean architecture, performance, and a robust MDX-based content system.
+This is the source code for the personal website of **Ircham Aji**, a Software Engineer based in Jakarta. This platform serves as a comprehensive professional hub, showcasing his work, studies, technical skills, and writings. Built with a focus on clean architecture, performance, and a robust MDX-based content system.
+
+## 🌟 About Ircham Aji
+
+Ircham is a full stack web developer who thrives on solving complex problems with clean, efficient code. From building robust backends to crafting seamless frontends, he enjoys creating tech solutions that just work.
+
+- **Role:** Software Engineer
+- **Location:** Jakarta, Indonesia
+- **Focus:** Backend Development (Django, Next.js, PostgreSQL), Frontend Development (React, Tailwind CSS), and Infrastructure/DevOps (Docker, Supabase).
+- **Contact:** contact@ircham.dev
 
 ## 🚀 Tech Stack
 
@@ -55,15 +64,15 @@ The project follows a modular structure designed for ease of content updates and
 
 ## 📝 Content Management
 
-Most of the website's content is managed without touching the core UI components.
+Most of the website's content is managed without touching the core UI components. The primary objective is to maintain a professional identity seamlessly.
 
 ### 1. Global Information (`src/resources/content.tsx`)
 This is the single source of truth for:
 - **Person:** Name, role, avatar, location.
-- **Work Experience:** Achievements and timelines.
+- **Work Experience:** Achievements, timelines, and responsibilities.
 - **Studies:** Educational background.
-- **Technical Skills:** Grouped skills with icons.
-- **Social Links:** Links to GitHub, LinkedIn, etc.
+- **Technical Skills:** Grouped skills (Frontend, Backend, DevOps) with icons.
+- **Social Links:** Links to GitHub, LinkedIn, Instagram, Threads, etc.
 
 ### 2. Design & Features (`src/resources/once-ui.config.ts`)
 Modify this file to:

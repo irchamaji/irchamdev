@@ -1,0 +1,136 @@
+---
+title: "Rinjani — Cybersecurity Maturity Verification Tool"
+publishedAt: "2026-01-04"
+summary: "A serverless, local-first web application for verifying cybersecurity maturity indices (IKAMI and IKASANDI). Features real-time multi-assessor collaboration powered by CRDTs, all without a traditional backend."
+images:
+  - "/images/projects/rinjani/cover.jpg"
+  - "/images/projects/rinjani/dashboard.jpg"
+  - "/images/projects/rinjani/verifikasi.jpg"
+  - "/images/projects/rinjani/verifikasi.jpg"
+  - "/images/projects/rinjani/export.jpg"
+team:
+  - name: "Ircham"
+    role: "Full-Stack Developer"
+    avatar: "/images/avatar.jpg"
+    linkedIn: "https://www.linkedin.com/in/ircham/"
+link: "https://ptkkss.ircham.dev/"
+---
+
+## Overview
+
+**Rinjani** is a browser-based verification tool for cybersecurity maturity assessment. It enables assessors to verify cybersecurity maturity indices — specifically IKAMI (Indeks KAMI) and IKASANDI — across organizations.
+
+The application is strictly **local-first**: all data is persisted in the browser via IndexedDB and no assessment data ever touches a central server. This design is intentional, as sensitive cybersecurity assessment data must stay within the assessor's environment.
+
+## The Local-First Architecture
+
+The core philosophy of Rinjani is to shift all heavy lifting into the browser. By wrapping IndexedDB with Dexie.js (RinjaniDB v3), the application ensures full offline capability. All processing — Excel parsing with `xlsx` and `exceljs`, Word report generation with `docxtemplater`, and scoring calculations — runs entirely client-side.
+
+Template files (Word/Excel) are served as immutable assets from Cloudflare R2, keeping the infrastructure minimal and the app fast.
+
+---
+
+## The Collaboration Problem
+
+This is where it got interesting.
+
+Cybersecurity maturity assessments are not solo activities. In practice, a verification round involves a *team* of assessors, each responsible for different domain areas of the assessment instrument. One assessor might be working through the governance controls while another simultaneously fills in the technology area. They need to see each other's progress. They need to avoid overwriting each other's answers.
+
+The conventional solution is simple: a central database. Assessor A saves a value, the server stores it, Assessor B fetches it on the next poll. Done.
+
+But Rinjani has **no server**. No database. That's the entire point — sensitive assessment data must not leave the assessor's machine. So building a traditional collaborative feature was off the table.
+
+The question became: **how do you synchronize state between multiple browsers with no authoritative central source of truth?**
+
+## Enter CRDTs
+
+The answer is a concept from distributed systems research: **Conflict-free Replicated Data Types**, or CRDTs.
+
+The key insight behind CRDTs is that they solve the synchronization problem at the *data structure level* rather than at the *database level*. Instead of having a server decide which write wins when two clients edit the same thing simultaneously, a CRDT is designed so that any combination of updates, in any order, will always converge to the same result.
+
+Think of it like addition. If Assessor A adds 3 and Assessor B adds 5, it doesn't matter which operation arrives first — the result is always 8. CRDTs generalize this mathematical property to complex operations on shared documents.
+
+Rinjani uses **Yjs**, a high-performance CRDT library that implements shared data types like maps, arrays, and text. Each assessor maintains their own local `Y.Doc` — a live CRDT document. When they make a change to the assessment, Yjs produces a compact binary **update delta** describing only what changed. That delta can be sent to any other peer and applied to their local `Y.Doc`. The mathematical guarantee holds: after all deltas have been exchanged, every assessor's local document is identical, regardless of what order the updates arrived.
+
+This is exactly what Rinjani needed. Each assessor works locally, with no waiting for a server round-trip. Changes appear instantly in their own UI. When their delta reaches other assessors, their UIs update too. If an assessor goes offline mid-session, they keep working normally. The moment they reconnect, Yjs reconciles everything automatically.
+
+## The Relay: A Deliberately Dumb Server
+
+CRDTs solve the *consistency* problem. But they still need a way to *transport* deltas between browsers — browsers can't call each other directly.
+
+This is where the architecture gets deliberately minimal. Rinjani introduces a single infrastructure component: `rinjani-relay`, a **Cloudflare Worker** that acts as a pure message relay.
+
+The relay is designed to be as dumb as possible. It has zero business logic. It does not understand assessment data. It cannot read or interpret any Yjs updates. It is, conceptually, a glorified message bus.
+
+Here is exactly what happens when an assessor opens a collaboration session:
+
+1. **Room creation.** Each verification session is identified by a unique ID. When an assessor initiates collaboration, they open a WebSocket connection to the relay, keyed to that session ID.
+
+2. **Durable Object assignment.** Cloudflare routes the connection to a **Durable Object** — a stateful serverless instance that lives at the edge. All assessors joining the same session ID are routed to the *same* Durable Object, ensuring they share one WebSocket room.
+
+3. **Delta forwarding.** When Assessor A makes a change, Yjs produces a binary update blob. That blob is sent over the WebSocket to the Durable Object. The Durable Object immediately broadcasts it to every other WebSocket connection in that room. That's all it does.
+
+4. **Local application.** Assessor B's browser receives the blob via `y-websocket`. The Yjs library applies it to B's local `Y.Doc`. React re-renders the affected parts of the UI. IndexedDB is updated.
+
+5. **Late joiners.** What if Assessor C joins after the session has been going for an hour? The Durable Object stores the current CRDT state using its **SQLite-backed storage**. When C connects, the relay sends them the full current state, allowing their `Y.Doc` to fast-forward to the present.
+
+The Cloudflare Worker relay never stores assessment content in a meaningful sense — it stores a Yjs binary blob that is opaque to it. The actual data only ever lives in Dexie.js (IndexedDB) inside each assessor's browser.
+
+## Presence: Knowing Who Is in the Room
+
+Synchronizing document state is one thing. But assessors also want to know who else is *currently active* in the session — are they looking at the same section? Did someone just start editing a control you were about to touch?
+
+Yjs has a built-in solution for this: the **Awareness protocol**.
+
+Awareness is a separate layer from the CRDT document. It carries *ephemeral* data — information that is real-time and does not need to be persisted. Each assessor publishes a small awareness state object: their display name, their current status, whatever metadata the UI needs.
+
+The `y-websocket` provider continuously sends **heartbeats** to the relay, updating the other peers with the assessor's current awareness state. If an assessor closes their browser tab or loses connectivity, their heartbeats stop. The Yjs runtime on the other clients detects the timeout and automatically removes them from the active collaborators list.
+
+In Rinjani, this drives the **presence UI** — the row of user avatars that appears when a collaboration session is active. When a teammate is online, their avatar is visible. When they disconnect, they disappear. No polling. No server logic. Pure protocol.
+
+## The Full Picture
+
+Step back and look at the system holistically:
+
+- **Dexie.js** owns the ground truth. Every assessor has a complete, persistent copy of the assessment in their browser's IndexedDB.
+- **Yjs** owns consistency. It ensures that all local copies converge to the same state through mathematical guarantees rather than a locking mechanism.
+- **`rinjani-relay`** owns transport. It moves binary CRDT deltas between browsers with zero understanding of their content.
+- **Cloudflare R2** owns templates. It serves the static Word/Excel report templates without needing any compute.
+
+The result is a genuinely collaborative multi-user application with **no traditional backend**, **no database**, and **no single point of failure**. An assessor can work offline all day and sync up later. The relay could go down entirely and assessors already in a session would continue working — they just wouldn't sync until it came back.
+
+---
+
+## Key Features
+
+- **Local-First Storage**: All assessment data stored in IndexedDB via Dexie.js — no data leaves the browser.
+- **Real-Time Collaboration**: Multi-assessor sessions using Yjs CRDTs + Cloudflare Worker WebSocket relay.
+- **Excel File Parsing**: Robust parsing of IKAMI v5.0 and IKASANDI format Excel files with validation and error handling.
+- **Complete Calculation Engine**: Official IKAMI methodology with accurate scoring and maturity classification.
+- **Multi-Format Export**: Template-based Word (docxtemplater) and Excel document generation.
+- **Offline Capability**: Full offline functionality — assessments run without any internet connection.
+- **Presence UI**: Live indicators showing which team members are currently active in the session.
+
+## Technologies Used
+
+- **Bun**: Fast JavaScript runtime and bundler.
+- **React 19 + TypeScript**: Type-safe component-based UI.
+- **Vite**: Fast development and production bundler.
+- **Dexie.js**: IndexedDB wrapper with React hooks (RinjaniDB v3).
+- **Yjs + y-websocket**: CRDT library for real-time conflict-free collaboration.
+- **Cloudflare Workers + Durable Objects**: WebSocket relay with SQLite-backed state (`rinjani-relay`).
+- **Cloudflare R2**: Immutable template file hosting (Word/Excel).
+- **xlsx & ExcelJS**: Excel file parsing and export.
+- **Docxtemplater**: Template-based Word document generation.
+- **shadcn/ui + Tailwind CSS v4 (OKLCH)**: Modern, accessible design system.
+- **React Router DOM v7**: Client-side routing.
+
+## Important Note
+
+Rinjani is a personal tool developed by a practicing cybersecurity maturity verifier to streamline verification workflows. It is not an official product endorsed by any regulatory body and is not a customer-facing application.
+
+## Outcome
+
+Rinjani turned a slow, manual, spreadsheet-driven verification process into an efficient, collaborative workflow. Multiple assessors can now work on a single verification session simultaneously, see each other's changes in real-time, and produce consistent, professional reports — all without any data leaving their own machines.
+
+More broadly, this project proved something worth knowing: a sophisticated, multi-user collaborative application does not require a traditional backend. With the right data structure (CRDTs), the right transport (a dumb relay), and the right storage (IndexedDB), you can build something that feels like Google Docs with an infrastructure cost close to zero.
