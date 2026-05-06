@@ -20,7 +20,7 @@ const routes: RoutesConfig = {
   "/": true,
   "/about": true,
   "/project": true,
-  "/blog": false,
+  "/blog": true,
   "/gallery": false,
 };
 
