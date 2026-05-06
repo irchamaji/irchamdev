@@ -1,0 +1,227 @@
+---
+title: "Kriteria Fungsionalitas Aplikasi Web untuk Audit Keamanan SPBE"
+summary: "Penjelasan detail prosedur Audit Keamanan SPBE untuk aplikasi web, mencakup autentikasi, manajemen sesi, kontrol akses, validasi input, kriptografi, penanganan error, proteksi data, dan keamanan API beserta panduan evaluasi EDK, EIK, dan EEK."
+publishedAt: "2026-05-05"
+tag: "Audit Keamanan"
+---
+
+## Explanation
+
+Penjelasan detail masing2 prosedur pada Audit Keamanan SPBE. Tiap fungsi (seperti "autentikasi", "manajemen sesi") memiliki beberapa prosedur/kontrol. Kemudian, tiap prosedur memiliki 3 hal evaluasi: Evaluasi Desain Kontrol (EDK), Evaluasi Implementasi Kontrol (EIK), dan Evaluasi Efektifitas Kontrol (EEK).
+
+Berikut penjelasan tiap evaluasi:
+
+- **EDK**: meninjau apakah desain (kebijakan, prosedur, SOP) yang dibuat di suatu instansi apakah sesuai dengan kriteria prosedur keamanan. Misal di peraturan SMKI (level kepala daerah) apakah mengatur tentang manajemen kata sandi untuk autentikasi. Hasil evaluasinya ada: Memadai, Perlu Peningkatan, dan Tidak Memadai.
+- **EIK**: meninjau apakah implementasi dari prosedur/kontrol tersebut sesuai dengan desain sebelumnya. Jadi kalo EDK nya **tidak memadai**, maka EIK ini tidak bisa dijawab. Hanya bisa dijawab kalo EDK nya **memadai** atau **perlu peningkatan**. Hasil evaluasinya ada: Sesuai dan Tidak Sesuai.
+- **EEK**: meninjau apakah implementasi yang diterapkan/diimplementasikan dari prosedur/kontrol ini sudah efektif untuk mencapai tujuan dari kontrol ini, atau apakah risiko yang muncul untuk hal yang berkaitan dengan kontrol dapat dimitigasi dan tertangani dengan baik. Hasil evaluasinya ada: Efektif, Perlu Peningkatan dan Tidak Efektif.
+
+Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap prosedur/kontrol dari seluruh fungsi: (bukti dukungnya biasanya kebijakan mikro: level kepala daerah atau kepala instansi, kebijakan kepala dinas atau unit kerja, prosedur/SOP terkait suatu proses)
+
+---
+
+## 1. Autentikasi
+
+> **Konteks regulasi:** Pasal 27 Perban BSSN No. 4 Tahun 2021 — prosedur teknis untuk memenuhi fungsi autentikasi sebagaimana Pasal 26 huruf a.
+> 
+> **Tujuan fungsi autentikasi:** Memastikan bahwa hanya pengguna yang sah (teridentifikasi dan terverifikasi) yang dapat mengakses sistem. Autentikasi adalah garis pertahanan pertama dari sebuah aplikasi.
+
+---
+
+### a. Menggunakan manajemen kata sandi untuk proses autentikasi
+
+**Penjelasan teknis:** Sistem harus memiliki modul manajemen password yang terdefinisi secara eksplisit — bukan implementasi ad hoc. Ini mencakup: kebijakan password (policy enforcement) yang dikodekan langsung ke dalam logika aplikasi, bukan hanya dokumen SOP. Dalam praktik, ini berarti ada class/service/module khusus (misal `PasswordManager`, `AuthService`) yang menangani seluruh siklus hidup password: pembuatan, validasi, rotasi, dan penghapusan. Framework seperti Django punya `AUTH_PASSWORD_VALIDATORS`, Spring Security punya `PasswordEncoder`, dsb.
+
+**Penjelasan awam:** Bayangkan password seperti kunci rumah. "Manajemen kata sandi" artinya instansi punya aturan tertulis dan sistem yang memastikan kunci itu: punya standar kekuatan tertentu, diganti secara berkala, dan tidak dibiarkan sembarangan. Bukan cuma aturan di atas kertas, tapi sistemnya sendiri yang memaksa aturan itu diikuti.
+
+**Risiko jika tidak diterapkan:** Pengguna bebas memakai password lemah seperti "123456" atau "admin". Tidak ada standar keamanan minimum. Sistem rentan terhadap serangan _brute force_ dan _credential stuffing_.
+
+**Bukti dukung untuk auditor:**
+
+- Kebijakan SMKI level kepala daerah/instansi yang secara eksplisit mengatur manajemen password
+- SOP Pengelolaan Kata Sandi (mencakup pembuatan, penggunaan, rotasi, pemulihan)
+- Screenshot atau dokumen teknis konfigurasi sistem yang menunjukkan adanya policy enforcement (misal: konfigurasi LDAP, Active Directory password policy, atau konfigurasi aplikasi)
+- Daftar aplikasi SPBE beserta status penerapan manajemen kata sandinya
+
+**EDK:** Tinjau apakah kebijakan SMKI atau kebijakan keamanan informasi instansi secara eksplisit mengatur manajemen kata sandi untuk autentikasi sistem. Cek apakah SOP terkait telah ditetapkan secara formal.
+
+**EIK:** Tinjau apakah sistem/aplikasi yang berjalan benar-benar mengimplementasikan manajemen kata sandi sesuai kebijakan yang ada. Lakukan pengujian: coba buat akun dengan password tanpa aturan — apakah sistem menolak? Cek apakah ada konfigurasi teknis yang aktif.
+
+**EEK:** Tinjau apakah manajemen kata sandi yang diterapkan efektif mencegah penggunaan password lemah dan mengurangi risiko akses tidak sah. Indikator: tidak ada insiden akun yang dibobol akibat password lemah, hasil vulnerability scan tidak menemukan weak password policy.
+
+---
+
+### b. Menerapkan verifikasi kata sandi pada sisi server
+
+**Penjelasan teknis:** Validasi password **wajib** dilakukan di sisi server (backend), bukan hanya di sisi client (browser/JavaScript). Client-side validation boleh ada untuk UX, tapi tidak boleh menjadi satu-satunya penjaga. Penyerang dapat dengan mudah menonaktifkan JavaScript, menggunakan `curl`, Burp Suite, atau Postman untuk mengirim request langsung ke endpoint API tanpa melalui form browser. Endpoint autentikasi (misal: `POST /api/login`) harus selalu memvalidasi credential di server sebelum mengeluarkan session token atau JWT. Jika hanya ada client-side validation, penyerang tinggal mengirim HTTP request langsung ke backend dan bypass semua validasi.
+
+**Penjelasan awam:** Ibarat gedung kantor: validasi di sisi client itu seperti tulisan "Silakan antre dengan tertib" di pintu masuk. Tapi validasi di sisi server itu seperti satpam yang benar-benar memeriksa ID badge setiap orang yang masuk. Kalau hanya ada tulisan tanpa satpam, siapa saja bisa masuk. Yang memastikan keamanan adalah satpam (server), bukan tulisannya (browser).
+
+**Risiko jika tidak diterapkan:** Penyerang bisa bypass login form menggunakan tools seperti Burp Suite atau curl, langsung menyerang endpoint API. Seluruh logika autentikasi bisa ditembus.
+
+**Bukti dukung untuk auditor:**
+
+- Source code review atau dokumentasi arsitektur yang menunjukkan logika validasi ada di backend
+- Hasil penetration testing yang membuktikan sistem menolak request autentikasi tidak valid yang dikirim langsung ke API (tanpa melalui browser)
+- Konfigurasi API Gateway atau WAF yang menunjukkan validasi server-side aktif
+- SOP pengembangan aplikasi yang mewajibkan server-side validation
+
+**EDK:** Tinjau apakah kebijakan/SOP pengembangan aplikasi atau standar keamanan aplikasi instansi mewajibkan validasi autentikasi dilakukan di sisi server.
+
+**EIK:** Uji secara teknis: kirim request login langsung ke endpoint backend (menggunakan Burp Suite atau curl) dengan credential yang salah — apakah server menolak? Pastikan validasi tidak hanya terjadi di JavaScript browser.
+
+**EEK:** Tinjau apakah penerapan server-side validation efektif mencegah bypass autentikasi. Indikator: hasil pentest tidak menemukan kemungkinan bypass login melalui manipulasi request langsung ke API.
+
+---
+
+### c. Mengatur jumlah karakter, kombinasi jenis karakter, dan masa berlaku dari kata sandi
+
+**Penjelasan teknis:** Ini adalah implementasi _password complexity policy_ dan _password expiry policy_. Secara teknis mencakup:
+
+- **Panjang minimum:** Umumnya minimal 8 karakter, direkomendasikan 12+ karakter (NIST SP 800-63B merekomendasikan minimal 8, fokus pada panjang daripada kompleksitas).
+- **Kombinasi karakter:** Minimal mencakup kombinasi huruf besar (A-Z), huruf kecil (a-z), angka (0-9), dan karakter khusus (!@#$%).
+- **Masa berlaku (expiry):** Password harus diganti setelah periode tertentu (misal: 90 hari). Sistem harus secara otomatis memaksa pengguna mengganti password saat masa berlaku habis.
+- **Password history:** Sistem mencegah pengguna memakai kembali N password terakhir. Implementasi teknis: dikonfigurasi di level aplikasi, LDAP/Active Directory, atau identity provider (Keycloak, Okta, dll).
+
+**Penjelasan awam:** Seperti aturan membuat PIN ATM: minimal 6 digit, tidak boleh urutan seperti 123456, dan harus diganti tiap beberapa bulan. Sistemnya yang memaksa aturan ini — kalau password tidak memenuhi syarat, sistem langsung menolak dan menjelaskan apa yang kurang. Password lama juga tidak boleh dipakai ulang.
+
+**Risiko jika tidak diterapkan:** Password pendek dan sederhana sangat mudah ditebak atau di-brute force. Password yang tidak pernah diganti bisa digunakan oleh mantan karyawan atau pihak yang pernah mengetahui password lama.
+
+**Bukti dukung untuk auditor:**
+
+- Kebijakan/SOP yang mendefinisikan standar password (panjang minimum, kombinasi karakter, masa berlaku)
+- Screenshot konfigurasi sistem (Active Directory Group Policy, Keycloak realm settings, atau konfigurasi aplikasi) yang menunjukkan policy aktif
+- Demonstrasi langsung: coba buat password yang tidak memenuhi syarat — sistem menolak dan menampilkan pesan error yang sesuai
+- Log atau laporan rotasi password periodik
+
+**EDK:** Tinjau apakah kebijakan/SOP instansi mendefinisikan secara eksplisit: panjang minimum karakter, kombinasi jenis karakter yang diwajibkan, dan masa berlaku kata sandi.
+
+**EIK:** Uji secara teknis: coba buat atau ubah password dengan variasi yang tidak memenuhi syarat (terlalu pendek, tanpa angka, tanpa huruf besar). Verifikasi sistem menolak dan menampilkan pesan yang sesuai. Periksa juga apakah ada mekanisme notifikasi expiry password kepada pengguna.
+
+**EEK:** Tinjau efektivitas kebijakan dalam mencegah penggunaan password lemah. Indikator: tidak ada temuan password lemah dalam password audit, tidak ada insiden akses tidak sah akibat password mudah ditebak.
+
+---
+
+### d. Mengatur jumlah maksimum kesalahan dalam pemasukan kata sandi
+
+**Penjelasan teknis:** Ini adalah implementasi _account lockout policy_ untuk mencegah serangan _brute force_. Mekanismenya:
+
+- Sistem mencatat jumlah percobaan login gagal per akun (atau per IP).
+- Setelah N kali gagal (misal: 5 kali), akun dikunci (_locked_) untuk periode tertentu (misal: 15-30 menit, atau sampai di-unlock manual oleh admin).
+- Ada dua model: **hard lockout** (akun dikunci permanen hingga admin reset) dan **soft lockout** (otomatis unlock setelah periode cooldown).
+- **CAPTCHA** bisa ditambahkan setelah beberapa kali gagal sebagai lapisan tambahan.
+- Perlu diperhatikan: mekanisme lockout bisa disalahgunakan untuk _denial of service_ — penyerang sengaja mengunci akun korban. Mitigasi: notifikasi email ke pemilik akun saat terjadi lockout.
+- Implementasi: biasanya disimpan di Redis/cache (attempt counter dengan TTL) atau database.
+
+**Penjelasan awam:** Seperti ATM yang memblokir kartu setelah 3 kali salah PIN. Ini mencegah seseorang yang tidak tahu password terus mencoba ribuan kemungkinan secara otomatis (serangan brute force). Setelah batas percobaan terlampaui, akun dikunci sementara dan pemilik akun biasanya mendapat notifikasi.
+
+**Risiko jika tidak diterapkan:** Penyerang bisa menggunakan tools otomatis untuk mencoba jutaan kombinasi password (brute force attack / dictionary attack) tanpa hambatan apapun, hingga akhirnya berhasil masuk.
+
+**Bukti dukung untuk auditor:**
+
+- Kebijakan/SOP yang mendefinisikan batas maksimum kesalahan login dan durasi lockout
+- Screenshot atau konfigurasi sistem yang menunjukkan account lockout policy aktif
+- Demonstrasi: coba login dengan password salah berulang kali — sistem harus menolak dan mengunci setelah batas tercapai
+- Log sistem yang mencatat percobaan login gagal dan lockout event
+
+**EDK:** Tinjau apakah kebijakan instansi secara eksplisit mendefinisikan jumlah maksimum kesalahan pemasukan kata sandi dan konsekuensinya (lockout/blokir sementara).
+
+**EIK:** Uji secara teknis: lakukan percobaan login gagal berulang kali melebihi batas yang ditentukan. Verifikasi sistem mengunci akun sesuai kebijakan. Periksa apakah ada notifikasi ke pemilik akun saat lockout terjadi.
+
+**EEK:** Tinjau apakah mekanisme lockout efektif mencegah brute force attack. Indikator: hasil pentest tidak menemukan kemungkinan brute force tak terbatas, monitoring menunjukkan lockout event terdeteksi dan direspons.
+
+---
+
+### e. Mengatur mekanisme pemulihan kata sandi
+
+**Penjelasan teknis:** Mekanisme password reset yang aman harus memenuhi beberapa syarat:
+
+- **Token berbasis waktu (time-limited token):** Link reset password menggunakan token acak yang kuat (minimal 128-bit entropy, misal UUID v4 atau CSPRNG) yang hanya berlaku untuk satu kali penggunaan dan kedaluwarsa dalam waktu singkat (misal: 15-60 menit).
+- **Pengiriman melalui kanal terverifikasi:** Token dikirim ke email atau nomor HP yang sudah terdaftar dan terverifikasi — bukan ditampilkan langsung di browser.
+- **Invalidasi token lama:** Saat token baru dibuat, semua token reset lama untuk akun yang sama harus diinvalidasi.
+- **Verifikasi identitas tambahan:** Bisa ditambahkan pertanyaan keamanan, OTP SMS, atau verifikasi manual oleh admin untuk akun sensitif.
+- **Anti-enumeration:** Respon sistem harus sama baik saat email terdaftar maupun tidak terdaftar, untuk mencegah penyerang mengetahui apakah suatu email terdaftar di sistem.
+- **Yang TIDAK boleh dilakukan:** Mengirim password lama via email, menampilkan password di browser, atau menggunakan token yang mudah ditebak (misal: timestamp saja).
+
+**Penjelasan awam:** Bayangkan lupa kunci rumah. Mekanisme yang benar: kamu menghubungi pusat layanan, mereka mengirim kode rahasia sementara ke nomor HP yang sudah terdaftar, kamu pakai kode itu untuk masuk dan langsung ganti kunci baru. Kode itu hanya berlaku beberapa menit. Yang salah: petugas memberitahu kunci lama kamu lewat telepon terbuka, atau kamu bisa meminta reset tanpa verifikasi identitas apapun.
+
+**Risiko jika tidak diterapkan:** Penyerang bisa mengambil alih akun orang lain dengan meminta reset password tanpa verifikasi identitas yang memadai. Token yang tidak kedaluwarsa bisa dieksploitasi lama setelah email reset dikirim.
+
+**Bukti dukung untuk auditor:**
+
+- SOP Pemulihan Kata Sandi yang terdokumentasi
+- Alur teknis (flow diagram) proses reset password
+- Demonstrasi proses reset: verifikasi token kedaluwarsa setelah digunakan atau melewati batas waktu
+- Bukti pengiriman token ke email/HP terdaftar (bukan ditampilkan di layar)
+- Kebijakan yang melarang pengiriman password plaintext
+
+**EDK:** Tinjau apakah instansi memiliki SOP atau prosedur tertulis untuk pemulihan kata sandi yang mencakup mekanisme verifikasi identitas dan keamanan proses reset.
+
+**EIK:** Uji proses pemulihan password secara langsung: apakah token reset dikirim ke kanal yang tepat? Apakah token kedaluwarsa setelah digunakan? Apakah ada verifikasi identitas yang memadai sebelum reset diizinkan?
+
+**EEK:** Tinjau apakah mekanisme pemulihan efektif mencegah pengambilalihan akun (account takeover) melalui eksploitasi proses reset password. Indikator: tidak ada insiden account takeover melalui reset password, hasil pentest tidak menemukan kelemahan pada alur pemulihan.
+
+---
+
+### f. Menjaga kerahasiaan kata sandi yang disimpan melalui mekanisme kriptografi
+
+**Penjelasan teknis:** Password **tidak boleh** disimpan dalam bentuk plaintext atau enkripsi reversibel di database. Yang wajib digunakan adalah **cryptographic hashing dengan salt**:
+
+- **Algoritma yang direkomendasikan:** bcrypt, Argon2id (paling direkomendasikan saat ini — OWASP), scrypt, atau PBKDF2. Keempatnya adalah _slow hashing algorithm_ yang sengaja dirancang lambat untuk mempersulit serangan brute force.
+- **Yang TIDAK boleh digunakan:** MD5, SHA-1, SHA-256 tanpa salt — algoritma ini terlalu cepat dan rentan terhadap rainbow table attack.
+- **Salt:** String acak unik yang ditambahkan ke setiap password sebelum di-hash, sehingga dua user dengan password sama akan memiliki hash yang berbeda. Modern password hashing library (bcrypt, Argon2) sudah otomatis menangani salt.
+- **Pepper (opsional, best practice):** Secret key yang disimpan di environment variable (bukan database) yang ditambahkan ke password sebelum hashing — lapisan keamanan tambahan jika database bocor.
+- **Work factor/cost factor:** Parameter yang mengontrol seberapa lambat algoritma bekerja. Harus di-tuning berkala seiring peningkatan kemampuan hardware.
+- Contoh implementasi: Django menggunakan PBKDF2 by default, bisa diganti Argon2 dengan `django-argon2`. Laravel menggunakan bcrypt. Spring Security mendukung semua algoritma di atas.
+
+**Penjelasan awam:** Password tidak boleh disimpan apa adanya di database — ibarat menyimpan kunci asli di bawah keset pintu. Sebaliknya, sistem menyimpan "sidik jari" dari password (disebut hash) yang tidak bisa dikembalikan ke password aslinya. Saat login, sistem membuat sidik jari dari password yang kamu ketik dan membandingkan dengan sidik jari yang tersimpan. Jika ada peretas yang berhasil mencuri database, mereka hanya mendapat sidik jari — tidak bisa membalikkannya menjadi password asli (terutama jika menggunakan algoritma yang kuat).
+
+**Risiko jika tidak diterapkan:** Jika database bocor (data breach), seluruh password pengguna langsung terbaca oleh penyerang. Password plaintext bisa langsung digunakan untuk login ke sistem lain (password reuse attack).
+
+**Bukti dukung untuk auditor:**
+
+- Dokumentasi teknis atau konfigurasi yang menunjukkan algoritma hashing yang digunakan
+- Source code review pada modul autentikasi (fungsi simpan/verifikasi password)
+- Hasil pemeriksaan langsung di database: field password harus berisi string hash (bukan plaintext) — untuk bcrypt biasanya diawali `$2b$`, untuk Argon2 diawali `$argon2id$`
+- Kebijakan yang mewajibkan penggunaan kriptografi untuk penyimpanan password
+- Catatan: auditor tidak perlu melihat password asli, cukup verifikasi format hash di database
+
+**EDK:** Tinjau apakah kebijakan atau standar teknis instansi secara eksplisit mewajibkan penyimpanan kata sandi menggunakan mekanisme kriptografi (hashing dengan salt), dan melarang penyimpanan plaintext.
+
+**EIK:** Lakukan pemeriksaan teknis pada database: verifikasi bahwa kolom password berisi nilai hash (bukan plaintext). Verifikasi algoritma hashing yang digunakan termasuk kategori algoritma yang direkomendasikan (bcrypt, Argon2, PBKDF2). Periksa apakah salt digunakan.
+
+**EEK:** Tinjau apakah mekanisme kriptografi yang diterapkan efektif melindungi kerahasiaan password jika terjadi kebocoran database. Indikator: algoritma yang digunakan adalah slow hashing algorithm yang direkomendasikan, work factor sesuai standar terkini, tidak ada password yang disimpan dalam plaintext atau enkripsi reversibel.
+
+---
+
+### g. Menggunakan jalur komunikasi yang diamankan untuk proses autentikasi
+
+**Penjelasan teknis:** Seluruh transmisi credential (username, password, token) antara client dan server **wajib** dienkripsi menggunakan TLS (Transport Layer Security). Secara praktis ini berarti:
+
+- **HTTPS wajib di seluruh endpoint:** Terutama endpoint login, logout, dan semua halaman yang memerlukan autentikasi. HTTP plain text tidak boleh digunakan sama sekali untuk transmisi credential.
+- **HTTP Strict Transport Security (HSTS):** Header `Strict-Transport-Security` harus dikonfigurasi agar browser otomatis menggunakan HTTPS dan mencegah SSL stripping attack. Contoh: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
+- **Versi TLS:** Minimal TLS 1.2, direkomendasikan TLS 1.3. TLS 1.0 dan 1.1 sudah deprecated dan tidak boleh digunakan.
+- **Sertifikat valid:** Gunakan sertifikat SSL/TLS dari Certificate Authority (CA) terpercaya, bukan self-signed certificate di production.
+- **Redirect HTTP ke HTTPS:** Semua request HTTP harus di-redirect otomatis ke HTTPS (301 redirect).
+- **Secure flag pada cookie:** Cookie session harus memiliki atribut `Secure` (hanya dikirim via HTTPS) dan `HttpOnly` (tidak dapat diakses JavaScript).
+- Tools untuk verifikasi: SSL Labs (ssllabs.com/ssltest), testssl.sh.
+
+**Penjelasan awam:** Bayangkan mengirim surat berisi password ke bank. Tanpa pengamanan (HTTP), suratnya dikirim terbuka — siapa saja yang ada di jalan bisa membaca isinya. Dengan HTTPS, suratnya dimasukkan ke amplop terkunci yang hanya bisa dibuka oleh bank. HTTPS adalah "amplop terkunci" untuk komunikasi internet. Kamu bisa melihatnya dari ikon gembok (🔒) di browser. Jika proses login tidak menggunakan HTTPS, password bisa dicuri oleh siapa saja yang berada di jaringan yang sama (misalnya WiFi publik).
+
+**Risiko jika tidak diterapkan:** Penyerang yang berada di jaringan yang sama (man-in-the-middle attack) dapat menyadap transmisi dan langsung membaca username/password yang dikirim dalam plaintext. Serangan ini sangat mudah dilakukan di jaringan WiFi publik menggunakan tools seperti Wireshark.
+
+**Bukti dukung untuk auditor:**
+
+- Hasil scan SSL/TLS menggunakan SSL Labs atau testssl.sh yang menunjukkan konfigurasi TLS yang baik (grade A atau A+)
+- Verifikasi langsung di browser: URL menggunakan `https://`, ikon gembok tampil, sertifikat valid dan belum kedaluwarsa
+- Verifikasi HSTS header menggunakan browser developer tools (Network tab → Response Headers)
+- Konfigurasi web server (Nginx/Apache) yang menunjukkan redirect HTTP ke HTTPS dan TLS version yang digunakan
+- Kebijakan yang mewajibkan penggunaan HTTPS untuk seluruh aplikasi SPBE
+- Catatan: cek juga apakah ada endpoint yang masih bisa diakses via HTTP tanpa redirect
+
+**EDK:** Tinjau apakah kebijakan instansi mewajibkan penggunaan jalur komunikasi terenkripsi (HTTPS/TLS) untuk seluruh aplikasi SPBE, terutama untuk proses autentikasi.
+
+**EIK:** Lakukan verifikasi teknis: akses aplikasi via HTTP — apakah otomatis di-redirect ke HTTPS? Periksa sertifikat SSL: apakah valid dan tidak kedaluwarsa? Gunakan SSL Labs untuk memeriksa konfigurasi TLS. Periksa response header HSTS.
+
+**EEK:** Tinjau apakah penggunaan HTTPS efektif mencegah penyadapan credential saat transmisi. Indikator: hasil scan SSL Labs minimal grade A, TLS 1.2+ digunakan, HSTS aktif, tidak ada endpoint autentikasi yang dapat diakses via HTTP tanpa redirect, tidak ada sertifikat kedaluwarsa.
+
+---
