@@ -225,3 +225,545 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 **EEK:** Tinjau apakah penggunaan HTTPS efektif mencegah penyadapan credential saat transmisi. Indikator: hasil scan SSL Labs minimal grade A, TLS 1.2+ digunakan, HSTS aktif, tidak ada endpoint autentikasi yang dapat diakses via HTTP tanpa redirect, tidak ada sertifikat kedaluwarsa.
 
 ---
+
+
+## 2. Manajemen Sesi
+
+> **Konteks regulasi:** Pasal 28 Perban BSSN No. 4 Tahun 2021 — prosedur teknis untuk memenuhi fungsi manajemen sesi.
+> 
+> **Tujuan fungsi manajemen sesi:** Memastikan bahwa setelah pengguna berhasil terautentikasi, akses yang diberikan kepada pengguna tersebut dikelola dengan aman selama masa sesi aktif — dan dihentikan dengan benar saat sesi berakhir. Sesi yang tidak dikelola dengan baik adalah pintu masuk utama serangan seperti session hijacking dan CSRF.
+
+---
+
+### a. Menggunakan pengendali sesi untuk proses manajemen sesi
+
+**Penjelasan teknis:** Aplikasi wajib menggunakan _session manager_ yang terdedikasi dan terdefinisi — bukan implementasi custom ad hoc yang dibuat sendiri dari nol. Session manager bertanggung jawab atas seluruh siklus hidup sesi: pembuatan token sesi, penyimpanan (server-side state atau stateless JWT), validasi setiap request, dan penghapusan saat logout. Implementasi custom session management sangat rawan bug keamanan — library/framework yang sudah teruji jauh lebih aman. Session state bisa disimpan di: server-side (Redis, database), atau stateless (JWT dengan signature verification). Setiap pendekatan punya trade-off keamanan yang harus dipahami.
+
+**Penjelasan awam:** Setelah kamu login, sistem perlu mengingat bahwa "ini adalah kamu" di setiap halaman yang kamu buka selanjutnya — karena HTTP pada dasarnya tidak punya "memori". Pengendali sesi adalah bagian sistem yang bertugas mengingat dan memverifikasi identitasmu di setiap langkah. Ini seperti tanda pengenal sementara yang diberikan satpam setelah kamu masuk gedung — kamu menunjukkannya setiap kali mau masuk ruangan berbeda, dan satpam mengecek apakah tanda pengenal itu masih berlaku.
+
+**Risiko jika tidak diterapkan:** Tanpa session manager yang proper, sesi bisa tidak konsisten, mudah dipalsukan, atau tidak bisa dicabut saat diperlukan (misal: saat logout atau ada indikasi penyalahgunaan).
+
+**Bukti dukung untuk auditor:**
+
+- Dokumentasi arsitektur teknis aplikasi yang menjelaskan mekanisme session management yang digunakan
+- SOP atau kebijakan yang mewajibkan penggunaan session manager standar (bukan custom)
+- Source code review atau konfigurasi framework yang menunjukkan session manager aktif digunakan (misal: Express-session, Django sessions, Spring Session)
+- Daftar aplikasi SPBE beserta mekanisme session management yang digunakan
+
+**EDK:** Tinjau apakah kebijakan pengembangan aplikasi instansi mewajibkan penggunaan pengendali sesi (session manager) yang terstandar untuk semua aplikasi SPBE.
+
+**EIK:** Verifikasi secara teknis bahwa aplikasi menggunakan session manager dari framework atau library yang diakui (bukan implementasi custom). Periksa konfigurasi session manager yang aktif.
+
+**EEK:** Tinjau apakah penggunaan session manager yang terstandar efektif mencegah kelemahan manajemen sesi. Indikator: hasil pentest tidak menemukan kelemahan session management fundamental, sesi dapat dibuat, divalidasi, dan dihapus dengan benar.
+
+---
+
+### b. Menggunakan pengendali sesi yang disediakan oleh kerangka kerja aplikasi
+
+**Penjelasan teknis:** Ini adalah spesifikasi lebih lanjut dari kontrol (a): session manager yang digunakan **harus** berasal dari kerangka kerja (framework) aplikasi yang dipakai, bukan dibangun sendiri. Setiap framework modern sudah menyediakan session management yang telah diuji secara ekstensif:
+
+- **Django:** `django.contrib.sessions` — session tersimpan di database, cache (Redis), atau file. Dikonfigurasi via `SESSION_ENGINE`.
+- **Laravel (PHP):** Built-in session handling via `session()` helper dan konfigurasi `config/session.php`.
+- **Spring Boot (Java):** Spring Session — mendukung Redis, JDBC, Hazelcast sebagai backend.
+- **Express.js (Node):** `express-session` middleware dengan Redis store.
+- **Next.js:** `next-auth` atau `iron-session` sebagai standar komunitas. Alasan utama: library pihak ketiga yang sudah mature telah menangani edge case keamanan yang sering terlewat dalam implementasi custom (misal: timing attack pada token comparison, proper entropy generation, dsb).
+
+**Penjelasan awam:** Ibarat memilih kunci brankas: lebih aman membeli brankas dari produsen terpercaya yang sudah melalui pengujian bertahun-tahun, daripada membuat brankas sendiri dari bahan seadanya. Framework aplikasi seperti Django atau Laravel sudah menyediakan "sistem tanda pengenal" yang telah teruji dan diaudit oleh ribuan developer di seluruh dunia. Menggunakannya jauh lebih aman daripada membuat sistem sendiri yang mungkin punya celah tersembunyi.
+
+**Risiko jika tidak diterapkan:** Implementasi session management custom sangat sering mengandung bug keamanan yang tidak disadari developer: token yang mudah ditebak, tidak ada invalidasi yang proper, atau penyimpanan yang tidak aman.
+
+**Bukti dukung untuk auditor:**
+
+- Dokumentasi teknis yang menyebutkan framework dan versi session manager yang digunakan
+- Konfigurasi framework (misal: `settings.py` Django, `config/session.php` Laravel) yang menunjukkan penggunaan built-in session manager
+- Source code review: tidak ada implementasi custom session dari nol
+- Catatan: verifikasi bahwa versi framework yang digunakan masih dalam status "supported" dan tidak ada known vulnerability pada modul session-nya
+
+**EDK:** Tinjau apakah kebijakan/standar pengembangan aplikasi instansi secara eksplisit mensyaratkan penggunaan session manager bawaan framework, bukan implementasi custom.
+
+**EIK:** Lakukan source code review atau dokumentasi review untuk memverifikasi bahwa session manager yang digunakan adalah bawaan framework (bukan custom). Identifikasi framework dan versi yang digunakan.
+
+**EEK:** Tinjau apakah penggunaan framework session manager efektif. Indikator: tidak ada temuan kelemahan session pada pentest yang disebabkan oleh implementasi session management yang buruk, framework yang digunakan masih actively maintained.
+
+---
+
+### c. Mengatur pembuatan dan keacakan token sesi yang dihasilkan oleh pengendali sesi
+
+**Penjelasan teknis:** Token sesi harus memiliki **entropi yang cukup** sehingga tidak bisa ditebak atau di-brute force. Standar minimum:
+
+- **Panjang token:** Minimal 128-bit (16 byte) random data, direkomendasikan 256-bit (32 byte).
+- **Sumber keacakan:** Harus menggunakan **Cryptographically Secure Pseudo-Random Number Generator (CSPRNG)** — bukan `Math.random()` (JavaScript) atau `rand()` (PHP) yang **tidak** cryptographically secure. Di Python: `secrets.token_hex()`, di Node.js: `crypto.randomBytes()`, di Java: `SecureRandom`.
+- **Encoding:** Token biasanya di-encode sebagai hex atau base64url untuk keamanan dalam transmisi.
+- **Untuk JWT:** Harus di-sign menggunakan algoritma yang kuat (HS256 minimum, direkomendasikan RS256 atau ES256 untuk asymmetric). Payload JWT tidak boleh berisi data sensitif karena bisa di-decode (meski tidak bisa dimodifikasi tanpa invalidasi signature).
+- **Uniqueness:** Setiap sesi harus mendapat token yang unik — tidak boleh ada pola atau urutan yang bisa diprediksi.
+
+**Penjelasan awam:** Token sesi adalah seperti nomor tiket antrian yang diberikan kepada kamu setelah login. Nomor tiket ini harus benar-benar acak dan unik — tidak boleh berurutan atau mudah ditebak. Kalau nomornya mudah ditebak (misal: 1001, 1002, 1003...), penyerang bisa menebak nomor tiket orang lain dan berpura-pura jadi mereka. Token yang baik seperti nomor seri acak yang sangat panjang — hampir tidak mungkin ditebak.
+
+**Risiko jika tidak diterapkan:** Jika token sesi dapat ditebak atau di-brute force, penyerang bisa melakukan session prediction attack — mengambil alih sesi pengguna lain tanpa harus tahu password mereka.
+
+**Bukti dukung untuk auditor:**
+
+- Dokumentasi atau konfigurasi yang menunjukkan panjang token sesi dan mekanisme pembuatannya
+- Source code review pada bagian pembuatan token: verifikasi penggunaan CSPRNG
+- Sampel token sesi yang dihasilkan: cek panjang dan apakah terlihat benar-benar acak (bukan sequential/predictable)
+- Hasil analisis entropi token menggunakan tools seperti Burp Suite (Sequencer) untuk mengukur keacakan token
+
+**EDK:** Tinjau apakah kebijakan/standar teknis instansi mendefinisikan persyaratan keacakan dan panjang minimum token sesi.
+
+**EIK:** Analisis token sesi yang dihasilkan sistem menggunakan Burp Suite Sequencer atau tools serupa. Verifikasi panjang token minimal 128-bit dan dibuat menggunakan CSPRNG. Cek apakah ada pola atau urutan yang dapat diprediksi.
+
+**EEK:** Tinjau apakah token yang dihasilkan memiliki entropi yang cukup untuk mencegah session prediction attack. Indikator: hasil analisis Burp Sequencer menunjukkan entropi tinggi, tidak ada temuan session prediction vulnerability pada pentest.
+
+---
+
+### d. Mengatur kondisi dan jangka waktu habis sesi
+
+**Penjelasan teknis:** Ada dua jenis timeout sesi yang harus diimplementasikan:
+
+- **Idle timeout (inactivity timeout):** Sesi otomatis berakhir setelah pengguna tidak aktif selama periode tertentu (misal: 15-30 menit untuk aplikasi sensitif, 1-2 jam untuk aplikasi umum). Ini mencegah sesi terbuka jika pengguna lupa logout atau meninggalkan komputer.
+- **Absolute timeout (maximum session duration):** Sesi berakhir setelah durasi maksimum tertentu meskipun pengguna masih aktif (misal: 8-24 jam). Memaksa re-autentikasi berkala.
+- **Kondisi terminasi paksa lainnya:** Sesi harus segera diinvalidasi saat: logout eksplisit, perubahan password, perubahan hak akses, deteksi aktivitas mencurigakan, atau permintaan admin.
+- **Implementasi server-side expiry:** Untuk session-based auth, expiry dikontrol di server (Redis TTL, database timestamp). Untuk JWT, gunakan `exp` claim — tapi ingat JWT tidak bisa di-invalidasi sebelum kedaluwarsa kecuali menggunakan blacklist/denylist.
+- Notifikasi ke pengguna sebelum sesi berakhir (misal: popup "Sesi Anda akan berakhir dalam 5 menit") adalah best practice untuk UX.
+
+**Penjelasan awam:** Bayangkan tanda pengenal sementara di gedung kantor. Tanda pengenal ini punya dua aturan: (1) jika kamu diam saja tidak kemana-mana selama 30 menit, tanda pengenal otomatis kadaluarsa, dan (2) meskipun kamu terus aktif, tanda pengenal tetap harus diperbaharui setelah 8 jam bekerja. Ini memastikan kalau kamu pergi dan lupa mengembalikan tanda pengenal, orang lain tidak bisa memakainya selamanya.
+
+**Risiko jika tidak diterapkan:** Sesi yang tidak pernah kedaluwarsa bisa dieksploitasi selamanya jika token sesi dicuri. Pengguna yang lupa logout di komputer publik akan membiarkan akun mereka terbuka tanpa batas waktu.
+
+**Bukti dukung untuk auditor:**
+
+- Kebijakan/SOP yang mendefinisikan durasi idle timeout dan absolute timeout sesi untuk setiap kategori aplikasi
+- Konfigurasi teknis yang menunjukkan timeout aktif (misal: `SESSION_COOKIE_AGE` di Django, `session.timeout` di konfigurasi server)
+- Demonstrasi: biarkan sesi idle melebihi batas — sistem harus otomatis logout
+- Cek apakah logout eksplisit benar-benar menginvalidasi token sesi di server (bukan hanya menghapus cookie di client)
+
+**EDK:** Tinjau apakah kebijakan instansi mendefinisikan jangka waktu habis sesi (idle timeout dan absolute timeout) serta kondisi-kondisi yang memaksa terminasi sesi.
+
+**EIK:** Uji secara teknis: biarkan sesi idle melebihi batas yang ditentukan, lalu coba gunakan — apakah sistem menolak dan meminta login ulang? Verifikasi bahwa logout menginvalidasi token di sisi server.
+
+**EEK:** Tinjau apakah timeout sesi efektif meminimalkan risiko session hijacking. Indikator: tidak ada sesi yang bisa digunakan setelah melewati batas timeout, token yang sudah logout tidak bisa digunakan kembali (replay test), tidak ada insiden akibat sesi yang tidak berakhir.
+
+---
+
+### e. Validasi dan pencantuman session ID
+
+**Penjelasan teknis:** Setiap request yang memerlukan autentikasi **wajib** divalidasi session ID-nya di sisi server. Ini mencakup:
+
+- **Validasi keberadaan:** Session ID ada dan tidak kosong.
+- **Validasi integritas:** Session ID terdaftar di server (ada di database/cache) dan belum kedaluwarsa.
+- **Validasi konteks:** Session terikat pada konteks yang tepat (misal: user ID, IP address binding opsional, User-Agent binding opsional).
+- **Pencantuman session ID:** Session ID harus dikirimkan melalui mekanisme yang aman:
+    - **Direkomendasikan:** Cookie dengan atribut `HttpOnly`, `Secure`, `SameSite=Strict` (atau `Lax`).
+    - **Tidak direkomendasikan:** URL parameter (`?sessionid=xxx`) — tercatat di server log, browser history, dan Referer header. Ini disebut session ID exposure.
+    - **Tidak direkomendasikan:** Hidden form field — rentan terhadap CSRF.
+- Setiap endpoint yang memerlukan autentikasi harus secara konsisten melakukan validasi — tidak ada endpoint yang "terlupa" diproteksi.
+
+**Penjelasan awam:** Setiap kali kamu membuka halaman baru di aplikasi, sistem harus selalu memeriksa apakah tanda pengenalmu (session ID) masih valid — tidak palsu, tidak kadaluarsa, dan benar-benar milikmu. Selain itu, cara membawa tanda pengenal ini juga penting: harus disimpan di tempat yang aman (cookie terproteksi), bukan ditempel di alamat URL yang bisa dilihat semua orang.
+
+**Risiko jika tidak diterapkan:** Jika session ID ditempatkan di URL, bisa bocor melalui log server, browser history, atau header Referer. Jika validasi tidak konsisten, ada endpoint yang bisa diakses tanpa autentikasi yang valid (IDOR, unauthorized access).
+
+**Bukti dukung untuk auditor:**
+
+- Source code atau dokumentasi teknis yang menunjukkan mekanisme validasi session ID di setiap request
+- Pemeriksaan menggunakan browser developer tools atau Burp Suite: di mana session ID dikirimkan? (Cookie vs URL)
+- Verifikasi atribut cookie: `HttpOnly`, `Secure`, `SameSite` harus terset dengan benar
+- Pengujian akses langsung ke endpoint tanpa session ID atau dengan session ID yang tidak valid — sistem harus menolak (401/403)
+- Pengujian apakah session ID pernah muncul di URL (cek access log server)
+
+**EDK:** Tinjau apakah kebijakan/standar teknis instansi mengatur cara pencantuman dan validasi session ID, termasuk larangan penggunaan session ID di URL.
+
+**EIK:** Verifikasi secara teknis: periksa di mana session ID dikirimkan (harus di cookie, bukan URL). Periksa atribut cookie (`HttpOnly`, `Secure`, `SameSite`). Coba akses endpoint tanpa session ID yang valid — sistem harus menolak.
+
+**EEK:** Tinjau apakah validasi dan pencantuman session ID efektif mencegah session hijacking dan unauthorized access. Indikator: session ID tidak pernah muncul di URL, cookie memiliki atribut proteksi yang lengkap, semua endpoint terproteksi secara konsisten.
+
+---
+
+### f. Pelindungan terhadap lokasi dan pengiriman token untuk sesi terautentikasi
+
+**Penjelasan teknis:** Kontrol ini berfokus pada perlindungan token sesi selama penyimpanan di client dan selama transmisi:
+
+- **Penyimpanan di client (Storage):**
+    - **Cookie dengan HttpOnly + Secure:** Pilihan terbaik untuk session token. `HttpOnly` mencegah akses via JavaScript (mitigasi XSS), `Secure` memastikan hanya dikirim via HTTPS.
+    - **localStorage/sessionStorage:** **TIDAK DIREKOMENDASIKAN** untuk session token sensitif — dapat diakses JavaScript, rentan terhadap XSS attack. Jika terpaksa digunakan (misal untuk SPA dengan JWT), pastikan ada mitigasi XSS yang sangat kuat.
+    - **Memory only (in-memory):** Paling aman untuk SPA, tapi hilang saat refresh halaman.
+- **Transmisi token:**
+    - Selalu via HTTPS (sudah dicakup kontrol 1g).
+    - Untuk API: gunakan `Authorization: Bearer <token>` header, bukan query parameter.
+    - Header `Cache-Control: no-store` dan `Pragma: no-cache` pada response autentikasi untuk mencegah token tersimpan di browser cache atau proxy.
+- **Token rotation:** Saat privilege level berubah (misal: setelah login atau setelah melakukan aksi sensitif), buat token sesi baru dan invalidasi yang lama. Ini disebut _session regeneration_.
+
+**Penjelasan awam:** Tanda pengenal sementara (token sesi) harus dijaga di dua titik: saat disimpan di perangkat kamu (harus di tempat yang tidak bisa diintip program jahat), dan saat dikirim ke server (harus melalui jalur terenkripsi). Analoginya: ID card kamu harus disimpan di dompet (bukan ditempel di baju), dan saat menunjukkannya ke satpam, kamu lakukan di ruang tertutup (bukan di tempat umum).
+
+**Risiko jika tidak diterapkan:** Token yang disimpan di localStorage dapat dicuri melalui serangan XSS. Token yang dikirim via HTTP atau URL dapat disadap. Token yang di-cache dapat diakses oleh pengguna lain pada komputer bersama.
+
+**Bukti dukung untuk auditor:**
+
+- Verifikasi di browser developer tools (Application tab): session token disimpan di Cookie (bukan localStorage/sessionStorage)
+- Cek atribut cookie: `HttpOnly`, `Secure`, `SameSite` harus ada
+- Periksa response headers saat login: pastikan ada `Cache-Control: no-store`
+- Verifikasi bahwa API endpoint menerima token via Authorization header, bukan URL parameter
+- Pentest untuk XSS: jika ada XSS vulnerability, apakah token dapat dicuri? (Cookie HttpOnly seharusnya mencegah ini)
+
+**EDK:** Tinjau apakah kebijakan/standar teknis instansi mengatur lokasi penyimpanan token sesi di client dan mekanisme pengirimannya yang aman.
+
+**EIK:** Verifikasi secara teknis lokasi penyimpanan token (harus di HttpOnly cookie, bukan localStorage). Periksa response header autentikasi untuk Cache-Control. Verifikasi token tidak dikirim via URL parameter.
+
+**EEK:** Tinjau apakah perlindungan token efektif mencegah pencurian token sesi. Indikator: token tidak dapat diakses via JavaScript (HttpOnly), tidak tersimpan di cache, tidak bocor ke URL, hasil pentest XSS tidak berhasil mencuri token sesi.
+
+---
+
+### g. Pelindungan terhadap duplikasi dan mekanisme persetujuan pengguna
+
+**Penjelasan teknis:** Kontrol ini mencakup dua hal utama:
+
+**1. Perlindungan terhadap duplikasi sesi (Session Fixation & Concurrent Session):**
+
+- **Session fixation prevention:** Saat pengguna berhasil login, token sesi yang digunakan sebelum login (pre-authentication session) **harus** dihapus dan diganti dengan token baru. Ini mencegah session fixation attack di mana penyerang sudah menyiapkan session ID tertentu dan memaksa korban menggunakannya.
+- **Concurrent session control:** Sistem dapat membatasi jumlah sesi aktif per pengguna secara bersamaan (misal: maksimal 1 sesi aktif, atau notifikasi saat login dari device baru). Saat sesi baru dibuat, sesi lama bisa diinvalidasi secara otomatis.
+- **Session ID regeneration:** Wajib dilakukan setiap kali terjadi perubahan privilege (login, logout, role change, password change).
+
+**2. Mekanisme persetujuan pengguna (CSRF Protection):**
+
+- **Cross-Site Request Forgery (CSRF):** Serangan di mana website berbahaya memaksa browser korban (yang sudah terautentikasi) untuk mengirim request ke aplikasi target tanpa sepengetahuan korban.
+- **Mitigasi CSRF:**
+    - **CSRF Token (Synchronizer Token Pattern):** Server menyisipkan token acak unik (CSRF token) ke dalam setiap form atau request. Token ini harus disertakan di setiap state-changing request dan divalidasi server. Token CSRF berbeda dari session token.
+    - **SameSite Cookie attribute:** `SameSite=Strict` atau `SameSite=Lax` mencegah cookie dikirim dalam cross-site request, mitigasi CSRF secara signifikan.
+    - **Double Submit Cookie:** Variasi lain dari CSRF protection.
+    - **Verifikasi Origin/Referer header** (sebagai lapisan tambahan).
+- Framework modern umumnya menyediakan CSRF protection built-in: Django (`{% csrf_token %}`), Laravel (middleware VerifyCsrfToken), Spring Security (CSRF token).
+
+**Penjelasan awam:** Ada dua perlindungan di sini:
+
+Pertama, mencegah "duplikasi tanda pengenal": setelah kamu login, sistem membuat tanda pengenal baru yang segar — tidak memakai tanda pengenal lama yang mungkin sudah diketahui orang lain. Juga bisa diatur agar kamu tidak bisa login dari dua tempat sekaligus.
+
+Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu yang meminta — bukan website lain yang diam-diam mengendalikan browsermu tanpa kamu sadari. Ini seperti memastikan tanda tangan di dokumen penting memang benar-benar tanda tanganmu, bukan tanda tangan palsu yang dibuat orang lain.
+
+**Risiko jika tidak diterapkan:**
+
+- Tanpa session regeneration: session fixation attack — penyerang bisa mengambil alih sesi pengguna sebelum mereka login.
+- Tanpa CSRF protection: penyerang bisa membuat pengguna secara tidak sadar melakukan aksi seperti transfer data, ubah password, atau hapus akun hanya dengan mengunjungi halaman berbahaya.
+
+**Bukti dukung untuk auditor:**
+
+- Source code review: verifikasi adanya session regeneration setelah login berhasil
+- Verifikasi CSRF token di setiap form: inspect HTML source, cari hidden input CSRF token
+- Periksa cookie attribute `SameSite` menggunakan browser developer tools
+- Dokumentasi atau konfigurasi yang menunjukkan CSRF middleware aktif
+- Pengujian CSRF: coba kirim request state-changing (POST/PUT/DELETE) tanpa CSRF token — sistem harus menolak (403 Forbidden)
+- Pengujian concurrent session: login dari dua device/browser berbeda — apakah ada notifikasi atau pembatasan?
+
+**EDK:** Tinjau apakah kebijakan/standar teknis instansi mengatur perlindungan terhadap session fixation, concurrent session, dan serangan CSRF. Pastikan ada ketentuan yang mewajibkan session regeneration saat login dan implementasi CSRF protection.
+
+**EIK:** Verifikasi secara teknis: (1) cek apakah session ID berubah sebelum dan sesudah login berhasil (session regeneration); (2) verifikasi CSRF token ada di setiap form yang melakukan aksi penting; (3) coba submit form tanpa CSRF token — sistem harus menolak; (4) periksa atribut `SameSite` pada cookie.
+
+**EEK:** Tinjau apakah perlindungan duplikasi dan mekanisme persetujuan efektif mencegah session fixation dan CSRF attack. Indikator: session ID selalu baru setelah login, semua form dilindungi CSRF token, request tanpa CSRF token ditolak, tidak ada temuan CSRF vulnerability pada pentest.
+
+## 3. Persyaratan Kontrol Akses
+
+> **Konteks regulasi:** Pasal 27 ayat (3) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan bahwa setelah pengguna terautentikasi, akses yang diberikan hanya sebatas apa yang memang menjadi haknya — tidak lebih. Autentikasi membuktikan _siapa_ kamu, kontrol akses membuktikan _apa yang boleh kamu lakukan_.
+
+---
+
+### a. Menetapkan otorisasi pengguna untuk membatasi kontrol akses
+
+**Penjelasan teknis:** Implementasi _authorization_ yang terstruktur menggunakan model seperti:
+
+- **RBAC (Role-Based Access Control):** Pengguna diberi role (Admin, Operator, Viewer), dan setiap role punya kumpulan permission. Ini model paling umum di aplikasi pemerintah.
+- **ABAC (Attribute-Based Access Control):** Keputusan akses berdasarkan atribut pengguna, resource, dan konteks (misal: jam kerja, lokasi).
+- **ACL (Access Control List):** Daftar eksplisit siapa boleh melakukan apa pada resource tertentu. Prinsip utama yang wajib diterapkan: **Principle of Least Privilege** — setiap pengguna hanya mendapat akses minimum yang dibutuhkan untuk menjalankan tugasnya. Otorisasi harus divalidasi di server pada setiap request, bukan hanya di UI (menyembunyikan tombol di frontend bukan otorisasi yang sah). Setiap endpoint API harus dilindungi dengan pengecekan otorisasi eksplisit.
+
+**Penjelasan awam:** Bayangkan gedung kantor dengan berbagai ruangan. Setiap pegawai punya kartu akses yang hanya bisa membuka ruangan sesuai jabatannya — staf administrasi bisa masuk ruang arsip, tapi tidak bisa masuk ruang server. Direktur bisa masuk semua ruangan. Kontrol akses di aplikasi bekerja sama: setiap pengguna hanya bisa mengakses fitur dan data sesuai perannya, tidak lebih.
+
+**Risiko jika tidak diterapkan:** Pengguna biasa bisa mengakses fitur admin, melihat data orang lain, atau melakukan aksi yang seharusnya dibatasi. Ini adalah celah yang sangat umum ditemukan di aplikasi pemerintah (IDOR — Insecure Direct Object Reference, Broken Access Control).
+
+**Bukti dukung untuk auditor:**
+
+- Kebijakan/SOP yang mendefinisikan matriks hak akses (role dan permission) untuk setiap aplikasi
+- Dokumentasi teknis struktur role dan permission yang diimplementasikan
+- Demonstrasi: login sebagai user biasa, coba akses URL/endpoint yang seharusnya hanya bisa diakses admin — sistem harus menolak (403 Forbidden)
+- Source code review: verifikasi setiap endpoint memiliki pengecekan otorisasi
+
+**EDK:** Tinjau apakah instansi memiliki kebijakan yang mendefinisikan matriks otorisasi (siapa boleh akses apa) untuk setiap aplikasi SPBE, termasuk prinsip least privilege.
+
+**EIK:** Uji secara teknis: coba akses resource/endpoint yang tidak sesuai role pengguna yang sedang login — sistem harus menolak. Verifikasi pengecekan otorisasi ada di sisi server, bukan hanya disembunyikan di UI.
+
+**EEK:** Tinjau apakah kontrol otorisasi efektif mencegah akses tidak sah. Indikator: tidak ada temuan Broken Access Control atau IDOR pada pentest, tidak ada insiden akses data oleh pihak yang tidak berhak.
+
+---
+
+### b. Mengatur peringatan terhadap bahaya serangan otomatis apabila terjadi akses yang bersamaan atau akses yang terus-menerus pada fungsi
+
+**Penjelasan teknis:** Ini adalah implementasi **rate limiting** dan **anomaly detection** pada level kontrol akses:
+
+- **Rate limiting:** Membatasi jumlah request per user/IP dalam periode waktu tertentu (misal: maksimal 100 request per menit per user). Implementasi: `express-rate-limit` (Node.js), Django Ratelimit, atau di level API Gateway/WAF (Nginx `limit_req`, Cloudflare Rate Limiting).
+- **Concurrent access detection:** Mendeteksi jika satu akun melakukan banyak request bersamaan secara tidak wajar (misal: scraping, automated attack).
+- **Alerting/notifikasi:** Saat threshold terlampaui, sistem harus: (1) menolak request selanjutnya (429 Too Many Requests), (2) mencatat ke log, (3) mengirim alert ke tim keamanan/admin.
+- **Progressive response:** Bisa ditambahkan CAPTCHA setelah beberapa request berlebihan sebelum hard block.
+- Implementasi di level infrastruktur: WAF (Web Application Firewall), API Gateway dengan rate limiting policy.
+
+**Penjelasan awam:** Bayangkan loket pelayanan yang normalnya melayani 1 orang per menit. Jika tiba-tiba ada satu orang yang mencoba mengakses loket 1000 kali dalam satu menit, itu tidak normal — pasti ada sesuatu yang salah (bisa serangan otomatis menggunakan bot). Sistem harus mendeteksi perilaku tidak wajar ini, otomatis memblokir, dan memberitahu petugas keamanan.
+
+**Risiko jika tidak diterapkan:** Penyerang bisa melakukan serangan otomatis (credential stuffing, data scraping, brute force pada fungsi tertentu) tanpa hambatan. Sistem bisa kewalahan (DoS) atau data bisa dicuri secara massal.
+
+**Bukti dukung untuk auditor:**
+
+- Konfigurasi rate limiting yang aktif (di aplikasi, API Gateway, atau WAF)
+- Log yang menunjukkan deteksi dan penolakan request berlebihan
+- Konfigurasi alerting: bukti ada notifikasi ke tim saat terjadi anomali
+- SOP respons insiden untuk serangan otomatis
+
+**EDK:** Tinjau apakah kebijakan/SOP instansi mengatur mekanisme deteksi dan respons terhadap akses otomatis yang berlebihan atau tidak wajar pada fungsi aplikasi.
+
+**EIK:** Uji rate limiting: kirim request melebihi batas yang ditentukan — sistem harus menolak dengan 429 Too Many Requests. Verifikasi ada logging dan alerting saat threshold terlampaui.
+
+**EEK:** Tinjau apakah mekanisme rate limiting dan alerting efektif mencegah serangan otomatis. Indikator: serangan brute force/scraping terdeteksi dan diblokir otomatis, tim keamanan menerima alert tepat waktu.
+
+---
+
+### c. Mengatur antarmuka pada sisi administrator
+
+**Penjelasan teknis:** Antarmuka administrator (admin panel/dashboard) harus mendapat perlakuan keamanan khusus:
+
+- **Isolasi akses:** Admin panel sebaiknya tidak dapat diakses dari internet publik — hanya dari jaringan internal atau VPN. URL admin tidak boleh mudah ditebak (`/admin` adalah URL yang terlalu umum dan selalu diserang).
+- **Autentikasi lebih kuat:** Admin panel harus menggunakan MFA (Multi-Factor Authentication) tambahan di atas password biasa.
+- **IP whitelisting:** Akses hanya dari IP/range yang sudah diizinkan.
+- **Audit logging lengkap:** Setiap aksi admin harus dicatat dengan detail (siapa, apa, kapan, dari mana).
+- **Separation of duties:** Tidak ada satu akun yang bisa melakukan semua aksi admin tanpa oversight — prinsip four-eyes.
+- **Timeout lebih ketat:** Sesi admin harus punya timeout lebih pendek dibanding user biasa.
+
+**Penjelasan awam:** Panel administrator adalah "ruang kontrol" dari sebuah aplikasi — dari sini bisa diubah data semua pengguna, dihapus akun, atau diubah konfigurasi sistem. Karena sangat powerful, ruang kontrol ini harus dijaga lebih ketat: tidak semua orang bisa tahu di mana pintunya, hanya orang tertentu yang boleh masuk, dan setiap yang dilakukan di dalamnya dicatat lengkap.
+
+**Risiko jika tidak diterapkan:** Admin panel yang dapat diakses publik adalah target serangan nomor satu. Jika berhasil dibobol, penyerang mendapat kontrol penuh atas seluruh sistem dan data.
+
+**Bukti dukung untuk auditor:**
+
+- Kebijakan yang mengatur siapa yang boleh mengakses admin panel dan dari mana
+- Konfigurasi teknis: akses admin terbatas (VPN/IP whitelist, port tidak standar)
+- Bukti MFA aktif untuk akun administrator
+- Log audit admin panel yang lengkap
+- Verifikasi: coba akses admin URL dari IP yang tidak diizinkan — harus ditolak
+
+**EDK:** Tinjau apakah kebijakan instansi mengatur secara eksplisit pembatasan akses ke antarmuka administrator, termasuk persyaratan autentikasi yang lebih ketat dan audit logging.
+
+**EIK:** Verifikasi teknis: apakah admin panel hanya dapat diakses dari jaringan/IP yang diizinkan? Apakah MFA aktif untuk admin? Apakah setiap aksi admin tercatat di log audit?
+
+**EEK:** Tinjau apakah pengamanan admin panel efektif mencegah akses tidak sah dan penyalahgunaan. Indikator: admin panel tidak dapat diakses dari internet publik tanpa VPN, semua aksi admin ter-log, tidak ada akun admin tanpa MFA.
+
+---
+
+### d. Mengatur verifikasi kebenaran token ketika mengakses data dan informasi yang dikecualikan
+
+**Penjelasan teknis:** "Informasi yang dikecualikan" merujuk pada data sensitif atau terbatas yang memerlukan level otorisasi lebih tinggi (misal: data pribadi, data keuangan, data rahasia instansi). Kontrol ini mensyaratkan:
+
+- **Token verification pada setiap akses:** Setiap kali resource sensitif diakses, token/credential pengguna harus diverifikasi ulang — bukan hanya saat login awal.
+- **Fine-grained authorization:** Pengecekan tidak hanya "apakah user sudah login" tapi "apakah user ini punya hak akses ke resource _spesifik_ ini".
+- **Re-authentication untuk aksi kritis:** Untuk aksi sangat sensitif (hapus data, export data massal, ubah konfigurasi kritis), minta pengguna melakukan konfirmasi ulang password atau OTP.
+- **Object-level authorization:** Validasi bahwa user tidak hanya punya permission untuk tipe resource, tapi juga untuk instance spesifik resource tersebut (mencegah IDOR).
+
+**Penjelasan awam:** Beberapa data sangat sensitif — seperti data kependudukan, data keuangan, atau dokumen rahasia. Untuk mengaksesnya, sistem tidak cukup hanya tahu bahwa "kamu sudah login" — sistem harus memverifikasi ulang bahwa kamu benar-benar punya izin khusus untuk data tersebut. Analoginya: masuk gedung dengan kartu biasa itu satu hal, tapi untuk masuk ruang brankas, kamu perlu verifikasi tambahan lagi.
+
+**Risiko jika tidak diterapkan:** Pengguna yang sudah login tapi tidak punya hak akses ke data tertentu bisa tetap mengakses data tersebut dengan memanipulasi ID di URL (IDOR attack). Data sensitif bocor ke pihak yang tidak berhak.
+
+**Bukti dukung untuk auditor:**
+
+- Dokumentasi klasifikasi data yang dikecualikan/sensitif dalam sistem
+- Source code review: verifikasi object-level authorization pada endpoint yang mengelola data sensitif
+- Pengujian IDOR: ubah ID di URL/parameter — apakah bisa mengakses data milik user lain?
+- Kebijakan yang mewajibkan verifikasi token pada akses data sensitif
+
+**EDK:** Tinjau apakah kebijakan instansi mendefinisikan klasifikasi data sensitif/dikecualikan dan mewajibkan verifikasi otorisasi khusus untuk mengaksesnya.
+
+**EIK:** Uji akses ke data sensitif: login sebagai user A, coba akses data milik user B dengan memanipulasi ID di request — sistem harus menolak. Verifikasi object-level authorization ada di server.
+
+**EEK:** Tinjau apakah verifikasi token efektif mencegah akses tidak sah ke data sensitif. Indikator: tidak ada temuan IDOR pada pentest, tidak ada insiden kebocoran data sensitif akibat kelemahan otorisasi.
+
+---
+
+## 4. Validasi Input
+
+> **Konteks regulasi:** Pasal 27 ayat (4) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan bahwa semua data yang masuk ke sistem melalui input pengguna divalidasi dan dibersihkan sebelum diproses, sehingga aplikasi tidak dapat dimanipulasi melalui input berbahaya.
+
+---
+
+### a. Menerapkan fungsi validasi input pada sisi server
+
+**Penjelasan teknis:** Sama dengan prinsip pada autentikasi: validasi input **wajib** dilakukan di sisi server. Client-side validation (JavaScript/HTML5) boleh ada untuk UX, tapi tidak boleh diandalkan untuk keamanan. Penyerang dapat dengan mudah memodifikasi request menggunakan Burp Suite atau curl untuk mengirim input apapun langsung ke server tanpa melalui form browser. Setiap parameter input (query string, form field, JSON body, header, cookie) harus divalidasi di server: tipe data, format, panjang, dan nilai yang diizinkan.
+
+**Penjelasan awam:** Formulir di website biasanya punya aturan: kolom nama tidak boleh berisi angka, kolom umur harus angka positif. Tapi aturan ini di browser bisa diakali — penyerang bisa mengirim data "kotor" langsung ke server melewati form. Makanya, server sendiri harus selalu memeriksa ulang setiap data yang masuk, tidak peduli dari mana asalnya.
+
+**Risiko jika tidak diterapkan:** SQL injection, XSS, command injection, buffer overflow — hampir semua serangan injeksi bermula dari input yang tidak divalidasi di server.
+
+**Bukti dukung:** Source code review menunjukkan validasi input di backend; pengujian: kirim input invalid langsung via Burp Suite — server harus menolak.
+
+**EDK:** Tinjau apakah standar pengembangan aplikasi instansi mewajibkan validasi input di sisi server untuk semua parameter.
+
+**EIK:** Kirim request dengan input tidak valid langsung ke endpoint API (bypass form browser) — server harus menolak dengan pesan error yang tepat.
+
+**EEK:** Indikator: tidak ada temuan injection vulnerability pada pentest akibat missing server-side validation.
+
+---
+
+### b. Menerapkan mekanisme penolakan input jika terjadi kesalahan validasi
+
+**Penjelasan teknis:** Saat validasi gagal, sistem harus menerapkan **fail-safe / reject-by-default**: input yang tidak valid **langsung ditolak**, bukan dicoba diperbaiki atau dilanjutkan. Respons penolakan harus: (1) mengembalikan status HTTP yang tepat (400 Bad Request untuk input tidak valid), (2) memberikan pesan error yang informatif kepada user tapi **tidak mengungkapkan detail teknis internal** (stack trace, nama tabel database, dsb.), (3) mencatat kejadian di log server untuk audit. Tidak boleh ada "silent fail" — input invalid yang lolos tanpa diproses maupun ditolak secara eksplisit.
+
+**Penjelasan awam:** Jika seseorang mengisi formulir dengan data yang salah atau mencurigakan, sistem harus langsung menolak dan memberitahu kesalahannya — bukan mencoba menebak maksudnya atau membiarkan data tersebut masuk. Ini seperti mesin tiket yang langsung menolak uang palsu, bukan mencoba memproses atau mengabaikannya.
+
+**Risiko jika tidak diterapkan:** Input invalid yang tidak ditolak secara eksplisit bisa diproses sebagian, menyebabkan perilaku tidak terduga atau membuka celah keamanan.
+
+**Bukti dukung:** Pengujian input invalid: apakah sistem mengembalikan 400 dengan pesan jelas? Apakah tidak ada stack trace yang terekspos? Log server menunjukkan pencatatan input invalid.
+
+**EDK:** Tinjau apakah SOP/standar pengembangan mengatur mekanisme penolakan input yang jelas dan aman (tidak mengekspos informasi teknis internal).
+
+**EIK:** Uji berbagai skenario input invalid — verifikasi sistem menolak dengan status code dan pesan yang tepat, tanpa mengekspos informasi sensitif.
+
+**EEK:** Indikator: tidak ada informasi teknis internal yang terekspos saat validasi gagal, semua input invalid ter-log dengan benar.
+
+---
+
+### c. Memastikan runtime environment aplikasi tidak rentan terhadap serangan validasi input
+
+**Penjelasan teknis:** Runtime environment (bahasa pemrograman, framework, library, OS) yang digunakan harus dalam versi yang aman dan up-to-date. Banyak kerentanan validasi input bukan berasal dari kode aplikasi, tapi dari library pihak ketiga yang digunakan. Langkah-langkah:
+
+- **Dependency scanning:** Gunakan tools seperti `npm audit`, `pip-audit`, OWASP Dependency-Check, atau Snyk untuk mendeteksi library dengan known vulnerability.
+- **Update berkala:** Terapkan patch management — library dan framework harus selalu di-update ke versi terbaru yang aman.
+- **Versi yang supported:** Pastikan menggunakan versi runtime (Python, Node.js, PHP, Java) yang masih dalam status "active support".
+
+**Penjelasan awam:** Aplikasi tidak berdiri sendiri — ia bergantung pada puluhan atau ratusan komponen pendukung (library/framework) yang dibuat pihak lain. Jika salah satu komponen tersebut punya kelemahan yang diketahui publik tapi belum di-update, penyerang bisa memanfaatkannya. Ini seperti rumah dengan tembok kuat tapi pintu belakangnya ternyata dari bahan yang mudah dibobol karena belum diganti.
+
+**Risiko jika tidak diterapkan:** Exploitasi known vulnerability pada library yang outdated (misal: Log4Shell, Heartbleed, berbagai CVE Laravel/Django/Spring).
+
+**Bukti dukung:** Hasil dependency vulnerability scan (npm audit, OWASP Dependency-Check); daftar komponen dan versi yang digunakan; bukti proses patch management (change log update); SOP patch management.
+
+**EDK:** Tinjau apakah kebijakan instansi mengatur patch management dan update berkala untuk runtime environment dan dependencies aplikasi.
+
+**EIK:** Lakukan dependency scan pada aplikasi — apakah ada library dengan known critical/high vulnerability? Verifikasi proses update yang berjalan.
+
+**EEK:** Indikator: tidak ada library dengan known critical vulnerability yang belum di-patch, proses dependency scanning berjalan secara rutin.
+
+---
+
+### d. Melakukan validasi positif pada seluruh input
+
+**Penjelasan teknis:** **Validasi positif (allowlist/whitelist)** berarti mendefinisikan dengan eksplisit apa yang **diizinkan**, bukan apa yang dilarang. Ini kebalikan dari blacklist (melarang karakter berbahaya tertentu). Contoh:
+
+- Kolom nama: hanya boleh huruf, spasi, tanda hubung — karakter lain ditolak.
+- Kolom NIK: harus tepat 16 digit angka.
+- Kolom tanggal: harus format YYYY-MM-DD.
+- Kolom email: harus sesuai format RFC 5322. Validasi positif jauh lebih aman dari blacklist karena penyerang selalu bisa menemukan cara baru untuk bypass blacklist (encoding tricks, Unicode bypass, dsb.). Implementasi: gunakan library validasi yang sudah mature (Joi, Zod, Marshmallow, Hibernate Validator) dengan schema yang ketat.
+
+**Penjelasan awam:** Ada dua cara menjaga keamanan pintu masuk: (1) membuat daftar hal-hal berbahaya yang dilarang (blacklist), atau (2) membuat daftar hal-hal yang memang boleh masuk (allowlist/whitelist). Cara kedua jauh lebih aman — jika tidak ada di daftar izin, otomatis ditolak. Penyerang kreatif selalu bisa menemukan cara baru untuk bypass larangan, tapi sangat sulit bypass izin yang sudah sangat spesifik.
+
+**Risiko jika tidak diterapkan:** Blacklist sering tidak lengkap — penyerang menemukan cara encoding atau karakter unicode yang tidak ada di blacklist untuk tetap menyisipkan payload berbahaya.
+
+**Bukti dukung:** Source code review: apakah validasi menggunakan allowlist (regex spesifik, schema yang ketat)? Pengujian: coba input dengan karakter di luar allowlist — sistem harus menolak.
+
+**EDK:** Tinjau apakah standar pengembangan aplikasi instansi mewajibkan penggunaan validasi positif (allowlist) untuk semua input pengguna.
+
+**EIK:** Review schema validasi input: apakah menggunakan pendekatan allowlist atau blacklist? Uji dengan input yang mengandung karakter di luar spesifikasi — harus ditolak.
+
+**EEK:** Indikator: tidak ada temuan injection attack yang berhasil karena validasi input yang lemah pada pentest.
+
+---
+
+### e. Melakukan filter terhadap data yang tidak dipercaya
+
+**Penjelasan teknis:** Data yang "tidak dipercaya" adalah semua data yang berasal dari luar batas kendali aplikasi: input pengguna, data dari API pihak ketiga, data dari database eksternal, file yang diunggah, dsb. Filter yang harus diterapkan:
+
+- **Output encoding:** Sebelum menampilkan data ke HTML, lakukan HTML encoding (`&`, `<`, `>`, `"`, `'` di-encode). Ini mencegah XSS.
+- **Parameterized queries:** Saat data digunakan dalam query SQL, selalu gunakan prepared statement/parameterized query — jangan pernah string concatenation langsung. Ini mencegah SQL injection.
+- **Command sanitization:** Jika data digunakan dalam system command, sanitasi ketat atau gunakan library yang aman.
+- **Context-aware encoding:** Encoding berbeda tergantung konteks output (HTML, JavaScript, CSS, URL, SQL) — jangan gunakan satu encoding untuk semua konteks.
+
+**Penjelasan awam:** Data dari pengguna dianggap "kotor" sampai terbukti bersih. Sebelum data tersebut dipakai — baik untuk ditampilkan ke layar maupun disimpan ke database — harus "dicuci" terlebih dahulu. Ibarat bahan makanan dari pasar: sebelum dimasak, harus dicuci dulu untuk menghilangkan kotoran atau pestisida yang tidak kasat mata.
+
+**Risiko jika tidak diterapkan:** XSS (Cross-Site Scripting), SQL Injection, Command Injection — tiga dari sepuluh kerentanan OWASP paling kritis.
+
+**Bukti dukung:** Source code review: penggunaan parameterized query, output encoding library; hasil DAST (Dynamic Application Security Testing); pentest: apakah XSS atau SQL injection berhasil?
+
+**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan filtering dan encoding data tidak dipercaya sebelum diproses atau ditampilkan.
+
+**EIK:** Uji XSS: masukkan `<script>alert(1)</script>` ke input — apakah ter-render sebagai kode atau ditampilkan sebagai teks biasa? Uji SQL injection: masukkan `' OR '1'='1` ke input — apakah query berhasil dimanipulasi?
+
+**EEK:** Indikator: tidak ada temuan XSS atau SQL injection pada pentest, output encoding konsisten diterapkan di seluruh aplikasi.
+
+---
+
+### f. Menggunakan fitur kode dinamis
+
+**Penjelasan teknis:** Kontrol ini melarang atau membatasi penggunaan **dynamic code execution** — fitur bahasa pemrograman yang memungkinkan kode dieksekusi secara dinamis dari string input:
+
+- **PHP:** `eval()`, `exec()`, `system()`, `passthru()`
+- **Python:** `eval()`, `exec()`, `compile()`
+- **JavaScript:** `eval()`, `new Function()`, `setTimeout(string)`
+- **Java:** Reflection yang tidak terkontrol Jika input pengguna pernah masuk ke fungsi-fungsi ini, penyerang bisa mengeksekusi kode arbitrary di server (Remote Code Execution/RCE) — ini adalah kerentanan paling kritis yang bisa terjadi. Jika penggunaan dynamic code tidak bisa dihindari, harus ada sandboxing yang sangat ketat dan input yang digunakan harus bukan dari user-controlled data.
+
+**Penjelasan awam:** Beberapa fungsi pemrograman bisa "menjalankan perintah apapun yang diberikan kepadanya". Jika penyerang bisa memasukkan perintahnya sendiri ke fungsi tersebut, mereka bisa memerintahkan server untuk melakukan apapun — menghapus data, mencuri informasi, atau bahkan mengambil alih server. Ini seperti mesin yang bisa menjalankan instruksi dari siapa saja yang memberikannya kertas bertuliskan perintah.
+
+**Risiko jika tidak diterapkan:** Remote Code Execution (RCE) — penyerang bisa mengeksekusi kode arbitrary di server, mengambil alih sistem sepenuhnya.
+
+**Bukti dukung:** Source code review: apakah ada penggunaan `eval()` atau fungsi serupa? Jika ada, apakah inputnya bukan dari user? Static code analysis report (SonarQube, Semgrep).
+
+**EDK:** Tinjau apakah kebijakan pengembangan instansi melarang atau membatasi penggunaan dynamic code execution, terutama dengan input dari pengguna.
+
+**EIK:** Lakukan static code analysis untuk mendeteksi penggunaan fungsi dynamic code execution. Verifikasi tidak ada input pengguna yang mengalir ke fungsi tersebut.
+
+**EEK:** Indikator: tidak ditemukan penggunaan dynamic code execution yang berbahaya dalam code review dan pentest.
+
+---
+
+### g. Melakukan pelindungan terhadap akses yang mengandung konten skrip
+
+**Penjelasan teknis:** Kontrol ini berfokus pada pencegahan **Cross-Site Scripting (XSS)** — serangan di mana penyerang menyisipkan skrip berbahaya ke dalam konten yang ditampilkan oleh aplikasi:
+
+- **Content Security Policy (CSP):** HTTP response header yang memberitahu browser skrip dari mana saja yang boleh dieksekusi. Konfigurasi ketat: `Content-Security-Policy: default-src 'self'; script-src 'self'` — melarang inline script dan skrip dari domain lain.
+- **X-XSS-Protection header:** `X-XSS-Protection: 1; mode=block` (untuk browser lama).
+- **X-Content-Type-Options:** `X-Content-Type-Options: nosniff` — mencegah browser "menebak" tipe konten yang berbeda dari yang dideklarasikan (mencegah MIME sniffing attack).
+- **Sanitasi HTML:** Jika aplikasi perlu menerima dan menampilkan HTML dari user (misal: rich text editor), gunakan library sanitasi HTML yang sudah teruji (DOMPurify, bleach).
+
+**Penjelasan awam:** XSS adalah serangan di mana penyerang "menyelipkan" kode berbahaya ke halaman website yang kemudian dieksekusi di browser korban. Hasilnya bisa bermacam-macam: mencuri cookie/session, menampilkan phishing form, atau mengarahkan user ke website berbahaya. Perlindungan XSS adalah seperti petugas yang memeriksa setiap koran yang masuk ke gedung untuk memastikan tidak ada selebaran berbahaya yang disisipkan di dalamnya.
+
+**Risiko jika tidak diterapkan:** Penyerang bisa mencuri session cookie pengguna lain, mengambil alih akun, atau menyebarkan malware kepada pengunjung website.
+
+**Bukti dukung:** Periksa response header menggunakan browser developer tools atau curl: apakah ada CSP, X-XSS-Protection, X-Content-Type-Options? Pengujian XSS pada semua input field. Laporan security header dari tools seperti securityheaders.com.
+
+**EDK:** Tinjau apakah kebijakan/standar teknis instansi mewajibkan implementasi proteksi XSS (CSP header, output encoding) pada semua aplikasi web.
+
+**EIK:** Periksa security headers pada response aplikasi. Uji XSS pada setiap input field. Verifikasi CSP aktif dan terkonfigurasi dengan benar.
+
+**EEK:** Indikator: CSP terkonfigurasi dengan ketat, tidak ada temuan XSS pada pentest, security header assessment menunjukkan grade baik.
+
+---
+
+### h. Melakukan pelindungan dari serangan injeksi basis data
+
+**Penjelasan teknis:** **SQL Injection** adalah serangan paling berbahaya dan paling umum pada aplikasi database. Pencegahan utama:
+
+- **Parameterized queries / Prepared statements:** Gunakan SELALU tanpa pengecualian. Input pengguna diperlakukan sebagai data, bukan bagian dari query SQL.
+    
+    ```python
+    # SALAH (rentan SQL injection):query = "SELECT * FROM users WHERE id = " + user_input# BENAR (parameterized):cursor.execute("SELECT * FROM users WHERE id = %s", (user_input,))
+    ```
+    
+- **ORM (Object-Relational Mapper):** Gunakan ORM (Django ORM, SQLAlchemy, Hibernate, Eloquent) yang secara default menggunakan parameterized query.
+- **Stored procedures:** Jika digunakan, tetap harus parameterized.
+- **Principle of least privilege pada database user:** Akun database yang digunakan aplikasi hanya punya permission SELECT/INSERT/UPDATE/DELETE yang diperlukan — tidak boleh DROP TABLE atau akses ke sistem tabel.
+- **Error handling:** Pesan error database tidak boleh ditampilkan ke pengguna (mengungkapkan struktur database).
+
+**Penjelasan awam:** SQL injection adalah ketika penyerang memasukkan "perintah database" ke dalam input biasa. Misalnya, di field nama pengguna dimasukkan kode yang bisa membuat database menampilkan seluruh isinya, menghapus tabel, atau bahkan memberikan akses penuh. Pencegahannya adalah memastikan input pengguna selalu diperlakukan sebagai "data biasa", bukan sebagai "perintah" oleh database.
+
+**Risiko jika tidak diterapkan:** Pencurian seluruh data database, manipulasi data, penghapusan data, dalam kasus tertentu bisa dijadikan entry point untuk RCE.
+
+**Bukti dukung:** Source code review: semua query menggunakan parameterized query atau ORM; pengujian SQL injection (manual atau SQLMAP); tidak ada pesan error database yang terekspos ke user.
+
+**EDK:** Tinjau apakah standar pengembangan instansi secara eksplisit melarang penggunaan string concatenation dalam query SQL dan mewajibkan parameterized query.
+
+**EIK:** Lakukan SQL injection testing pada semua input field yang berinteraksi dengan database. Review source code untuk memastikan tidak ada dynamic query construction dari input user.
+
+**EEK:** Indikator: tidak ada temuan SQL injection pada pentest, source code review tidak menemukan raw string concatenation di query SQL.
+
+---
