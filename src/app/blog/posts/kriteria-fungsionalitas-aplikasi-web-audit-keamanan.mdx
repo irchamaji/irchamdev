@@ -767,3 +767,107 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 **EEK:** Indikator: tidak ada temuan SQL injection pada pentest, source code review tidak menemukan raw string concatenation di query SQL.
 
 ---
+
+## 5. Kriptografi pada Verifikasi Statis
+
+> **Konteks regulasi:** Pasal 27 ayat (5) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan penggunaan kriptografi yang kuat dan benar untuk melindungi kerahasiaan, integritas, dan keaslian data — baik saat disimpan maupun saat ditransmisikan.
+
+---
+
+### a. Menggunakan algoritma kriptografi, modul kriptografi, protokol kriptografi, dan kunci kriptografi sesuai dengan ketentuan peraturan perundang-undangan
+
+**Penjelasan teknis:** Indonesia mengacu pada standar kriptografi nasional melalui regulasi BSSN dan NIST. Algoritma yang direkomendasikan:
+
+- **Enkripsi simetris:** AES-256 (mode GCM atau CBC dengan padding PKCS7). Jangan gunakan DES, 3DES, atau RC4 — sudah deprecated.
+- **Enkripsi asimetris:** RSA-2048 minimum (direkomendasikan RSA-4096 atau ECC/ECDSA P-256/P-384). Jangan gunakan RSA < 1024 bit.
+- **Hashing:** SHA-256 minimum (SHA-3 direkomendasikan untuk aplikasi baru). Jangan gunakan MD5 atau SHA-1 untuk tujuan keamanan.
+- **Key derivation:** PBKDF2, bcrypt, Argon2id untuk derivasi kunci dari password.
+- **Protokol TLS:** TLS 1.2 minimum, TLS 1.3 direkomendasikan. Jangan gunakan SSL, TLS 1.0, TLS 1.1.
+- **Modul kriptografi:** Gunakan library yang sudah diaudit dan ter-maintain (OpenSSL, libsodium, Bouncy Castle, Python `cryptography` library). Jangan implementasi algoritma kriptografi sendiri.
+
+**Penjelasan awam:** Kriptografi seperti gembok — ada gembok yang kuat dan ada yang mudah dibobol. Regulasi menetapkan standar minimum: hanya gembok yang sudah terbukti kuat yang boleh digunakan. Gembok lama yang sudah terbukti bisa dibobol (algoritma lama) tidak boleh dipakai lagi, meskipun masih "kelihatan aman" di permukaan.
+
+**Risiko jika tidak diterapkan:** Data yang dienkripsi dengan algoritma lemah bisa didekripsi oleh penyerang. Kunci yang terlalu pendek rentan terhadap serangan brute force dengan hardware modern.
+
+**Bukti dukung:** Dokumentasi teknis yang menyebutkan algoritma kriptografi yang digunakan; konfigurasi TLS (SSL Labs scan); source code review modul kriptografi; kebijakan yang mengacu pada standar yang berlaku.
+
+**EDK:** Tinjau apakah kebijakan keamanan informasi instansi menetapkan standar algoritma kriptografi yang boleh dan tidak boleh digunakan, mengacu pada regulasi yang berlaku.
+
+**EIK:** Verifikasi algoritma yang aktif digunakan: scan TLS konfigurasi, review source code modul enkripsi, pastikan tidak ada penggunaan algoritma deprecated.
+
+**EEK:** Indikator: SSL Labs grade A+, tidak ada algoritma deprecated yang digunakan, semua kunci memenuhi panjang minimum yang disyaratkan.
+
+---
+
+### b. Melakukan autentikasi data yang dienkripsi
+
+**Penjelasan teknis:** Enkripsi saja tidak cukup — data yang dienkripsi harus juga diautentikasi untuk memastikan integritas dan keasliannya. Ini disebut **Authenticated Encryption**:
+
+- **AEAD (Authenticated Encryption with Associated Data):** Gunakan mode enkripsi yang sekaligus mengautentikasi data, seperti AES-GCM atau ChaCha20-Poly1305. Mode ini menghasilkan _authentication tag_ yang membuktikan data tidak dimodifikasi.
+- **MAC (Message Authentication Code):** Jika tidak menggunakan AEAD, tambahkan HMAC (misal: HMAC-SHA256) setelah enkripsi (Encrypt-then-MAC pattern).
+- **Digital Signature:** Untuk dokumen atau data yang perlu diverifikasi oleh pihak lain, gunakan tanda tangan digital (RSA/ECDSA).
+- **Jangan gunakan ECB mode:** Mode ECB tidak mengautentikasi data dan memiliki kelemahan fatal (pola data terlihat dalam ciphertext).
+
+**Penjelasan awam:** Mengenkripsi data tanpa autentikasi seperti memasukkan pesan dalam amplop terkunci — orang lain tidak bisa membaca isinya, tapi bisa menukar amplop atau memodifikasi amplop tanpa diketahui. Autentikasi data terenkripsi seperti menambahkan segel resmi pada amplop — jika segel rusak, penerima tahu bahwa amplop sudah pernah dibuka atau dimodifikasi.
+
+**Risiko jika tidak diterapkan:** Bit-flipping attack — penyerang bisa memodifikasi ciphertext secara terstruktur tanpa perlu mendekripsinya, menyebabkan perubahan data yang tidak terdeteksi setelah dekripsi.
+
+**Bukti dukung:** Source code review: apakah mode enkripsi yang digunakan adalah AEAD (AES-GCM)? Verifikasi authentication tag selalu diverifikasi saat dekripsi.
+
+**EDK:** Tinjau apakah standar kriptografi instansi mewajibkan penggunaan authenticated encryption (bukan enkripsi saja) untuk data sensitif.
+
+**EIK:** Review implementasi enkripsi: apakah menggunakan mode AEAD atau Encrypt-then-MAC? Apakah authentication tag diverifikasi saat dekripsi?
+
+**EEK:** Indikator: tidak ada penggunaan unauthenticated encryption (misal: AES-ECB atau AES-CBC tanpa MAC) untuk data sensitif.
+
+---
+
+### c. Menerapkan manajemen kunci kriptografi
+
+**Penjelasan teknis:** Kunci kriptografi adalah aset paling sensitif dalam sistem — jika kunci bocor, semua data yang dienkripsi dengan kunci tersebut bisa didekripsi. Manajemen kunci mencakup:
+
+- **Pembuatan kunci:** Menggunakan CSPRNG, panjang sesuai standar.
+- **Penyimpanan kunci:** Tidak boleh di-hardcode dalam source code. Gunakan: environment variables, secrets manager (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault), HSM (Hardware Security Module) untuk kunci yang sangat kritis.
+- **Rotasi kunci:** Kunci harus diganti secara berkala. Saat rotasi, data yang dienkripsi dengan kunci lama harus di-re-enkripsi dengan kunci baru.
+- **Akses terbatas:** Hanya proses/service yang benar-benar membutuhkan yang boleh mengakses kunci.
+- **Backup dan pemulihan:** Prosedur aman untuk backup kunci dan pemulihan jika terjadi insiden.
+- **Audit trail:** Setiap akses dan penggunaan kunci dicatat.
+
+**Penjelasan awam:** Kunci kriptografi seperti master key gembok brankas — sangat berharga dan harus dijaga ekstra. Tidak boleh disimpan sembarangan (tidak boleh ditulis di source code yang bisa dilihat siapa saja), harus diganti secara berkala, dan hanya orang yang benar-benar berwenang yang boleh memegangnya. Ada prosedur khusus untuk membuat, menyimpan, menggunakan, dan menghancurkan kunci ketika sudah tidak diperlukan.
+
+**Risiko jika tidak diterapkan:** Kunci yang hardcoded di source code bisa bocor jika repository kode diakses orang lain. Kunci yang tidak pernah dirotasi — jika bocor — memungkinkan penyerang mendekripsi semua data historis.
+
+**Bukti dukung:** Tidak ada kunci kriptografi di source code (cek dengan `git grep` atau secret scanning tools); konfigurasi secrets manager; SOP manajemen siklus hidup kunci; bukti rotasi kunci berkala.
+
+**EDK:** Tinjau apakah instansi memiliki kebijakan manajemen kunci kriptografi yang mencakup pembuatan, penyimpanan, distribusi, rotasi, dan pemusnahan kunci.
+
+**EIK:** Scan source code untuk hardcoded secrets (API key, kunci enkripsi). Verifikasi penggunaan secrets manager. Periksa prosedur rotasi kunci.
+
+**EEK:** Indikator: tidak ditemukan hardcoded key di source code, kunci dirotasi sesuai jadwal, akses ke kunci ter-audit.
+
+---
+
+### d. Membuat angka acak yang menggunakan generator angka acak kriptografi
+
+**Penjelasan teknis:** Semua nilai yang berkaitan dengan keamanan (token, salt, kunci, nonce, CSRF token, OTP) harus dibuat menggunakan **CSPRNG (Cryptographically Secure Pseudo-Random Number Generator)**:
+
+- **Python:** `secrets` module (`secrets.token_hex()`, `secrets.token_bytes()`) — bukan `random` module.
+- **Node.js:** `crypto.randomBytes()` — bukan `Math.random()`.
+- **PHP:** `random_bytes()`, `random_int()` — bukan `rand()` atau `mt_rand()`.
+- **Java:** `java.security.SecureRandom` — bukan `java.util.Random`. Fungsi random biasa (`Math.random()`, `rand()`) menggunakan algoritma yang **dapat diprediksi** jika penyerang mengetahui seed atau beberapa output sebelumnya — tidak aman untuk keperluan kriptografi.
+
+**Penjelasan awam:** Ada dua jenis "lempar dadu": dadu biasa (hasilnya bisa diprediksi jika tahu pola mesinnya) dan dadu kriptografis (benar-benar tidak bisa diprediksi). Untuk token keamanan, OTP, atau kunci enkripsi, harus selalu pakai "dadu kriptografis" — yang benar-benar acak. Kalau pakai dadu biasa, penyerang yang cukup pintar bisa menebak angka berikutnya.
+
+**Risiko jika tidak diterapkan:** Token yang dihasilkan dari non-CSPRNG bisa diprediksi, memungkinkan penyerang memalsukan token sesi, OTP, atau nilai kriptografi lainnya.
+
+**Bukti dukung:** Source code review: identifikasi penggunaan random number generator di bagian kritis (token generation, salt generation, key generation) — verifikasi menggunakan CSPRNG.
+
+**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan penggunaan CSPRNG untuk semua nilai yang berkaitan dengan keamanan.
+
+**EIK:** Source code review pada semua lokasi pembuatan token, salt, kunci, dan OTP — verifikasi penggunaan CSPRNG, bukan fungsi random biasa.
+
+**EEK:** Indikator: tidak ditemukan penggunaan fungsi random non-kriptografis untuk keperluan keamanan dalam code review.
+
+---
