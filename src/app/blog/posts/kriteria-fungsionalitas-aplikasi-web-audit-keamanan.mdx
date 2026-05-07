@@ -871,3 +871,972 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 **EEK:** Indikator: tidak ditemukan penggunaan fungsi random non-kriptografis untuk keperluan keamanan dalam code review.
 
 ---
+
+
+## 6. Penanganan Eror dan Pencatatan Log
+
+> **Konteks regulasi:** Pasal 27 ayat (6) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan eror ditangani dengan aman (tidak membocorkan informasi sensitif) dan semua kejadian keamanan dicatat secara memadai untuk keperluan audit dan investigasi insiden.
+
+---
+
+### a. Mengatur konten pesan yang ditampilkan ketika terjadi kesalahan
+
+**Penjelasan teknis:** Pesan error yang ditampilkan ke pengguna harus mengikuti prinsip **information hiding**:
+
+- **User-facing:** Tampilkan pesan generik yang informatif untuk user tapi tidak mengungkapkan detail teknis: "Terjadi kesalahan sistem. Silakan coba lagi atau hubungi administrator." — bukan stack trace, nama file, nama tabel database, atau versi software.
+- **Internal logging:** Detail error teknis (stack trace, query yang gagal, dsb.) dicatat di log server — tidak ditampilkan ke user.
+- **Custom error pages:** Buat halaman error custom (404, 500, dsb.) yang branded dan tidak menggunakan default error page framework (yang sering mengekspos informasi teknis).
+- **Debug mode:** Pastikan debug mode **dinonaktifkan** di production. Django `DEBUG=False`, PHP `display_errors=Off`, dsb.
+
+**Penjelasan awam:** Saat terjadi kesalahan, sistem tidak boleh "curhat" tentang masalah internalnya kepada pengguna. Informasi seperti "Error di baris 47 file database.py, query SELECT * FROM tabel_rahasia gagal" sangat berguna bagi penyerang untuk memahami struktur sistem. Yang boleh ditampilkan: pesan singkat yang ramah bahwa ada masalah, tanpa detail teknis apapun.
+
+**Risiko jika tidak diterapkan:** Stack trace dan pesan error teknis mengungkapkan struktur internal aplikasi, nama teknologi yang digunakan, dan kadang data sensitif — informasi berharga bagi penyerang untuk menyusun serangan lebih lanjut.
+
+**Bukti dukung:** Demonstrasi: trigger error (URL tidak valid, input yang menyebabkan exception) — apakah pesan error yang tampil ke user bersih dari informasi teknis? Verifikasi debug mode dimatikan di production; custom error page aktif.
+
+**EDK:** Tinjau apakah kebijakan/standar pengembangan instansi mengatur bahwa pesan error yang ditampilkan ke pengguna tidak boleh mengandung informasi teknis internal.
+
+**EIK:** Trigger berbagai skenario error — verifikasi pesan yang ditampilkan ke user tidak mengandung stack trace, nama file, atau informasi teknis lainnya. Verifikasi debug mode dimatikan.
+
+**EEK:** Indikator: tidak ada informasi teknis yang terekspos melalui pesan error pada pengujian, custom error page aktif di semua environment production.
+
+---
+
+### b. Menggunakan metode penanganan eror untuk mencegah kesalahan terprediksi dan tidak terduga serta menangani seluruh pengecualian yang tidak ditangani
+
+**Penjelasan teknis:** Implementasi **comprehensive exception handling**:
+
+- **Try-catch di semua titik kritis:** Semua operasi yang bisa gagal (database query, API call eksternal, file I/O, parsing) harus dibungkus dalam try-catch.
+- **Global exception handler:** Harus ada handler di level aplikasi yang menangkap semua unhandled exception sebelum sampai ke user (misal: `@app.errorhandler` di Flask, `@ControllerAdvice` di Spring).
+- **Fail safely:** Saat terjadi error, aplikasi harus masuk ke state yang aman — bukan crash atau menampilkan partial data.
+- **Tidak menggunakan empty catch block:** `catch(Exception e) {}` tanpa logging atau handling adalah anti-pattern berbahaya — error ditelan tanpa diketahui.
+
+**Penjelasan awam:** Sistem yang baik harus punya rencana cadangan untuk setiap kemungkinan masalah — baik yang sudah diprediksi maupun yang tidak terduga. Seperti pilot pesawat yang harus tahu cara menangani berbagai kondisi darurat, bukan hanya kondisi ideal. Jika ada yang tidak tertangani, sistem harus tetap mendarat dengan aman (fail gracefully), bukan jatuh bebas (crash).
+
+**Risiko jika tidak diterapkan:** Unhandled exception bisa menyebabkan aplikasi crash, menampilkan error page dengan informasi teknis, atau masuk ke state tidak konsisten yang bisa dieksploitasi.
+
+**Bukti dukung:** Source code review: apakah ada global exception handler? Apakah semua operasi kritis punya error handling? Apakah tidak ada empty catch block? Pengujian: trigger berbagai skenario error — aplikasi harus tetap berjalan dengan baik.
+
+**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan implementasi comprehensive exception handling termasuk global exception handler.
+
+**EIK:** Review source code untuk memastikan semua operasi kritis punya error handling. Verifikasi global exception handler aktif. Trigger unhandled exception — aplikasi harus menangani dengan graceful.
+
+**EEK:** Indikator: tidak ada unhandled exception yang menyebabkan crash di production, semua error ditangani dan di-log dengan benar.
+
+---
+
+### c. Tidak mencantumkan informasi yang dikecualikan dalam pencatatan log
+
+**Penjelasan teknis:** Log adalah catatan operasional sistem, bukan tempat menyimpan data sensitif. **Data yang TIDAK boleh masuk ke log:**
+
+- Password, PIN, kunci kriptografi
+- Nomor kartu kredit, data keuangan
+- Data pribadi sensitif (NIK, nomor KK, data kesehatan)
+- Session token, API key, secret key
+- Data yang masuk klasifikasi "dikecualikan" sesuai regulasi Implementasi: buat fungsi/filter logging yang secara otomatis menyensor (masking/redacting) field sensitif sebelum ditulis ke log. Misal: password di-mask menjadi `[REDACTED]`, nomor kartu `4111-1111-1111-1111` menjadi `4111-****-****-1111`.
+
+**Penjelasan awam:** Log adalah buku catatan harian sistem — berguna untuk investigasi masalah. Tapi buku catatan ini tidak boleh mencatat informasi yang sangat sensitif seperti password atau data pribadi pengguna. Jika log bisa diakses oleh pihak yang tidak berwenang (atau bocor), informasi sensitif tersebut ikut terekspos. Log harus cukup informatif untuk investigasi, tapi tidak sampai menyimpan data yang berbahaya jika bocor.
+
+**Risiko jika tidak diterapkan:** Log yang mengandung password atau data sensitif menjadi target menarik bagi penyerang. Jika log bocor (sering terjadi karena log disimpan di tempat yang kurang terlindungi), data sensitif ikut bocor.
+
+**Bukti dukung:** Review sample log file: verifikasi tidak ada password, token, atau data sensitif yang tercatat; konfigurasi log masking/filtering; kebijakan pengelolaan log.
+
+**EDK:** Tinjau apakah kebijakan instansi melarang pencatatan data sensitif/dikecualikan dalam log dan mengatur mekanisme masking/redacting.
+
+**EIK:** Review sample log: apakah ada password, token, atau data pribadi sensitif yang tercatat? Verifikasi log masking aktif untuk field sensitif.
+
+**EEK:** Indikator: tidak ditemukan data sensitif dalam log file, log masking berjalan dengan benar untuk semua field yang dikategorikan sensitif.
+
+---
+
+### d. Mengatur cakupan log yang dicatat untuk mendukung upaya penyelidikan ketika terjadi insiden
+
+**Penjelasan teknis:** Log harus cukup lengkap untuk mendukung forensik digital saat terjadi insiden. Event yang **wajib** dicatat:
+
+- Semua percobaan login (berhasil dan gagal) — dengan timestamp, username, IP address
+- Logout dan session timeout
+- Percobaan akses ke resource yang tidak diizinkan (403 events)
+- Perubahan data sensitif (create, update, delete)
+- Perubahan konfigurasi atau hak akses
+- Error dan exception yang terjadi
+- Perubahan password atau credential Setiap log entry harus mengandung: timestamp (dengan timezone), user ID, action, resource yang diakses, IP address, hasil (sukses/gagal), dan correlation ID untuk tracing.
+
+**Penjelasan awam:** Saat terjadi insiden keamanan, tim investigasi harus bisa menjawab: apa yang terjadi, kapan, siapa yang melakukannya, dan dari mana. Log yang baik seperti CCTV yang terpasang di semua sudut penting — merekam siapa yang masuk, kapan, melakukan apa. Log yang tidak lengkap seperti CCTV yang hanya ada di satu pintu — banyak kejadian tidak terekam.
+
+**Risiko jika tidak diterapkan:** Saat terjadi insiden, tidak ada bukti yang bisa digunakan untuk investigasi — tidak bisa menentukan apa yang terjadi, kapan, dan siapa pelakunya.
+
+**Bukti dukung:** Konfigurasi logging yang menunjukkan event apa saja yang dicatat; sample log yang menunjukkan kelengkapan field (timestamp, user, IP, action, result); kebijakan retensi log; SOP response insiden yang mengacu pada log.
+
+**EDK:** Tinjau apakah kebijakan instansi mendefinisikan cakupan minimum log yang harus dicatat (jenis event, field yang wajib ada, durasi retensi).
+
+**EIK:** Review konfigurasi logging dan sample log: apakah semua event keamanan penting dicatat? Apakah setiap entry mengandung timestamp, user, IP, dan detail action?
+
+**EEK:** Indikator: log mencukupi untuk mendukung investigasi insiden (simulasikan skenario insiden dan cek apakah buktinya ada di log), retensi log sesuai kebijakan.
+
+---
+
+### e. Mengatur pelindungan log aplikasi dari akses dan modifikasi yang tidak sah
+
+**Penjelasan teknis:** Log adalah barang bukti — harus dilindungi dari manipulasi:
+
+- **Akses terbatas:** Hanya admin/tim keamanan yang bisa mengakses log file. Gunakan file permission yang ketat.
+- **Write-once / append-only:** Log harus hanya bisa di-append, tidak bisa di-edit atau di-delete oleh pengguna biasa (bahkan operator).
+- **Centralized logging:** Kirim log ke sistem terpusat (SIEM, log aggregator seperti ELK Stack, Splunk, Loki) yang terpisah dari server aplikasi — jika server dibobol, log sudah aman di tempat lain.
+- **Log integrity:** Bisa ditambahkan mekanisme hash chaining atau digital signature pada log untuk mendeteksi jika ada yang dimodifikasi.
+- **Enkripsi log:** Log yang disimpan sebaiknya dienkripsi untuk melindungi dari akses tidak sah.
+
+**Penjelasan awam:** Jika penyerang berhasil masuk ke sistem, hal pertama yang mereka lakukan adalah menghapus log untuk menghilangkan jejak. Log harus disimpan di tempat yang tidak bisa diubah atau dihapus oleh penyerang — idealnya di sistem terpisah yang hanya bisa di-tulis, tidak bisa di-hapus. Ini seperti kotak hitam pesawat terbang — dirancang untuk bertahan dan tidak bisa dimodifikasi.
+
+**Risiko jika tidak diterapkan:** Penyerang yang berhasil masuk bisa menghapus log untuk menghilangkan bukti, membuat investigasi insiden tidak mungkin dilakukan.
+
+**Bukti dukung:** Konfigurasi sistem logging terpusat (SIEM/log aggregator); permission file log (hanya append, tidak writable oleh proses aplikasi); bukti log dikirim ke sistem eksternal yang terpisah.
+
+**EDK:** Tinjau apakah kebijakan instansi mengatur perlindungan integritas dan kerahasiaan log, termasuk pembatasan akses dan mekanisme centralized logging.
+
+**EIK:** Verifikasi konfigurasi akses log: apakah log hanya bisa diakses oleh pihak berwenang? Apakah log dikirim ke sistem terpusat? Verifikasi log tidak bisa dihapus oleh proses aplikasi biasa.
+
+**EEK:** Indikator: log tidak bisa dimodifikasi atau dihapus oleh penyerang yang berhasil masuk ke server aplikasi, centralized logging aktif dan berfungsi.
+
+---
+
+### f. Melakukan enkripsi pada data yang disimpan untuk mencegah injeksi log
+
+**Penjelasan teknis:** **Log injection** adalah serangan di mana penyerang menyisipkan karakter kontrol (newline `\n`, carriage return `\r`) atau format khusus ke dalam input yang masuk ke log, sehingga log entry palsu bisa dibuat. Misalnya, username `admin\n[2024-01-01] User admin logged in successfully` bisa menyisipkan log entry palsu. Pencegahan:
+
+- **Sanitasi input sebelum logging:** Strip atau encode karakter newline dan kontrol dari data yang akan di-log.
+- **Enkripsi log:** Log yang dienkripsi tidak bisa dimanipulasi tanpa kunci.
+- **Structured logging:** Gunakan format log terstruktur (JSON) dengan field yang terdefinisi — jauh lebih sulit diinjeksi dibanding plain text log.
+- **Log signing:** Tambahkan signature kriptografi pada setiap log batch.
+
+**Penjelasan awam:** Log injection seperti seseorang yang memalsukan buku absensi dengan menyelipkan kertas berisi absensi palsu di antara halaman asli. Enkripsi log dan format log yang terstruktur membuat pemalsuan seperti ini sangat sulit dilakukan, karena setiap perubahan akan terdeteksi.
+
+**Bukti dukung:** Konfigurasi structured logging (JSON format); bukti sanitasi input sebelum logging; enkripsi log aktif jika diterapkan.
+
+**EDK/EIK/EEK:** Sama seperti kontrol log lainnya — fokus pada apakah structured logging dan sanitasi input ke log sudah diterapkan.
+
+---
+
+### g. Melakukan sinkronisasi sumber waktu sesuai dengan zona waktu dan waktu yang benar
+
+**Penjelasan teknis:** Timestamp yang akurat dalam log adalah syarat mutlak untuk investigasi forensik digital. Jika timestamp berbeda antar server, urutan kejadian tidak bisa direkonstruksi.
+
+- **NTP (Network Time Protocol):** Semua server harus disinkronisasi ke NTP server yang terpercaya. Di Indonesia: gunakan NTP server BSSN atau BMKG (`ntp.bssn.go.id`, `0.id.pool.ntp.org`).
+- **Timezone konsisten:** Semua server harus menggunakan timezone yang sama (disarankan UTC untuk server, konversi ke WIB/WITA/WIT hanya untuk tampilan UI).
+- **Log timestamp:** Setiap log entry harus menyertakan timestamp dengan presisi minimal detik, lebih baik millisecond, beserta informasi timezone.
+- **Monitoring drift:** Pasang monitoring untuk mendeteksi jika ada server yang driftnya terlalu jauh dari waktu referensi.
+
+**Penjelasan awam:** Bayangkan investigasi insiden di mana log server A menunjukkan serangan terjadi pukul 10:00, tapi log server B menunjukkan pukul 10:35 — padahal keduanya seharusnya merekam kejadian yang sama. Investigasi jadi kacau karena tidak bisa menentukan urutan kejadian yang sebenarnya. Sinkronisasi waktu memastikan semua sistem punya "jam yang sama", sehingga investigasi bisa berjalan dengan akurat.
+
+**Risiko jika tidak diterapkan:** Timestamp log yang tidak akurat membuat investigasi insiden sulit atau tidak mungkin dilakukan — urutan kejadian tidak bisa direkonstruksi dengan benar.
+
+**Bukti dukung:** Konfigurasi NTP pada semua server; verifikasi sinkronisasi waktu aktif (`timedatectl status`, `ntpstat`); log menunjukkan timestamp yang konsisten dan akurat.
+
+**EDK:** Tinjau apakah kebijakan instansi mewajibkan sinkronisasi waktu menggunakan NTP pada semua server yang menjalankan aplikasi SPBE.
+
+**EIK:** Verifikasi konfigurasi NTP aktif di setiap server. Bandingkan timestamp log antar server — apakah konsisten?
+
+**EEK:** Indikator: semua server tersinkronisasi ke NTP dengan drift < 1 detik, timestamp log konsisten dan akurat di semua server.
+
+---
+
+## 7. Proteksi Data
+
+> **Konteks regulasi:** Pasal 27 ayat (7) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan data — terutama data sensitif/dikecualikan — dilindungi sepanjang siklus hidupnya: saat disimpan, diproses, ditukar, dan dihapus.
+
+---
+
+### a. Melakukan identifikasi dan penyimpanan salinan informasi yang dikecualikan
+
+**Penjelasan teknis:** Langkah pertama proteksi data adalah mengetahui data apa yang ada dan di mana:
+
+- **Data inventory/classification:** Identifikasi semua data yang diproses aplikasi dan klasifikasikan tingkat sensitivitasnya (publik, internal, rahasia, sangat rahasia).
+- **Data minimization:** Kumpulkan dan simpan hanya data yang benar-benar diperlukan — jangan simpan data yang tidak ada keperluan bisnis yang jelas.
+- **Enkripsi data sensitif at rest:** Data sensitif yang disimpan harus dienkripsi di tingkat field/kolom atau tingkat database. Jangan hanya mengandalkan enkripsi disk (full-disk encryption) saja.
+- **Salinan/backup:** Backup data sensitif harus dienkripsi dan disimpan di lokasi terpisah yang aman. Akses backup dibatasi dan diaudit.
+
+**Penjelasan awam:** Sebelum bisa melindungi sesuatu, harus tahu dulu apa yang perlu dilindungi dan di mana letaknya. Identifikasi data sensitif seperti membuat inventaris barang berharga di rumah — setelah tahu ada di mana, bisa diputuskan mana yang perlu dikunci di brankas, mana yang cukup disimpan di lemari biasa.
+
+**Bukti dukung:** Data classification policy; inventaris data (data catalog); bukti enkripsi data sensitif at rest; prosedur backup yang mencakup enkripsi.
+
+**EDK:** Tinjau apakah instansi memiliki kebijakan klasifikasi data dan inventaris data yang dikecualikan, termasuk persyaratan enkripsi untuk penyimpanannya.
+
+**EIK:** Verifikasi apakah data sensitif di database dienkripsi (field-level atau full encryption). Periksa prosedur backup apakah mencakup enkripsi.
+
+**EEK:** Indikator: semua data yang terklasifikasi sensitif/dikecualikan tersimpan dalam bentuk terenkripsi, backup dienkripsi dan disimpan aman.
+
+---
+
+### b. Melakukan pelindungan dari akses yang tidak sah terhadap informasi yang dikecualikan yang disimpan sementara dalam aplikasi
+
+**Penjelasan teknis:** Data sensitif yang disimpan sementara (temporary/cache) juga harus dilindungi:
+
+- **In-memory cache:** Data sensitif di cache (Redis, Memcached) harus dienkripsi dan punya TTL (time-to-live) yang pendek. Cache harus dikonfigurasi dengan autentikasi.
+- **Temporary files:** Jika aplikasi membuat file temporary yang mengandung data sensitif, file tersebut harus dienkripsi, dibuat di direktori yang hanya bisa diakses oleh proses aplikasi, dan dihapus segera setelah tidak diperlukan.
+- **Session storage:** Data sensitif tidak boleh disimpan di session storage kecuali memang diperlukan, dan session harus dienkripsi.
+- **Browser storage:** Jangan simpan data sensitif di localStorage, sessionStorage, atau cookie yang tidak aman.
+
+**Penjelasan awam:** Data sensitif kadang disimpan sementara di "ruang tunggu" sistem (cache/temp) agar bisa diakses lebih cepat. Ruang tunggu ini juga harus diamankan — bukan seperti ruang terbuka, tapi lebih seperti ruang tunggu VIP yang butuh ID khusus untuk masuk, dan data yang tidak diperlukan lagi segera dikeluarkan.
+
+**Bukti dukung:** Konfigurasi Redis/cache dengan autentikasi dan enkripsi; TTL yang wajar pada cache data sensitif; prosedur cleanup temporary file.
+
+**EDK/EIK/EEK:** Tinjau dan verifikasi konfigurasi cache, kebijakan TTL, dan prosedur pembersihan temporary data sensitif.
+
+---
+
+### c. Melakukan pertukaran, penghapusan, dan audit informasi yang dikecualikan
+
+**Penjelasan teknis:**
+
+- **Pertukaran data sensitif:** Saat data sensitif perlu dibagikan antar sistem atau pihak, gunakan kanal terenkripsi (SFTP, HTTPS, S/MIME untuk email) dan mekanisme autentikasi yang kuat. Hindari berbagi data sensitif via email plain text atau media tidak terenkripsi.
+- **Penghapusan aman (secure deletion):** Menghapus file biasa (`rm`) tidak benar-benar menghapus data — hanya menandai ruang sebagai tersedia. Untuk data sensitif, gunakan secure deletion (overwrite sebelum hapus): `shred`, `wipe`, atau enkripsi data sebelum disimpan (sehingga menghapus kunci sama dengan menghapus data — crypto shredding).
+- **Audit trail pertukaran dan penghapusan:** Setiap pertukaran dan penghapusan data sensitif harus dicatat dalam audit log — siapa, apa, kapan, kepada/oleh siapa.
+- **Right to erasure (hak hapus):** Sesuai UU PDP, pengguna berhak meminta penghapusan datanya — sistem harus mendukung penghapusan menyeluruh dari semua penyimpanan (database, backup, cache, log).
+
+**Penjelasan awam:** Data sensitif yang tidak diperlukan lagi harus dihancurkan, bukan hanya "dibuang ke tong sampah" digital — pihak lain masih bisa memungutnya dari sana. Penghancuran yang benar seperti memasukkan dokumen fisik ke mesin penghancur kertas, bukan hanya meremas dan membuangnya.
+
+**Bukti dukung:** SOP pertukaran data sensitif; prosedur secure deletion; audit log pertukaran dan penghapusan data; prosedur penanganan hak hapus pengguna.
+
+**EDK/EIK/EEK:** Tinjau kebijakan dan prosedur pertukaran/penghapusan data; verifikasi implementasi secure deletion; review audit log pertukaran data.
+
+---
+
+### d. Melakukan penentuan jumlah parameter
+
+**Penjelasan teknis:** Kontrol ini berkaitan dengan **parameter pollution** dan **mass assignment** attacks:
+
+- **Mass assignment prevention:** Saat menerima input JSON/form yang akan langsung di-map ke model/objek database, harus ada allowlist field yang boleh diubah. Jangan gunakan "update all fields from request" tanpa filter — penyerang bisa mengubah field yang seharusnya tidak bisa diubah (misal: `is_admin=true`, `balance=1000000`).
+- **Parameter pollution:** Validasi bahwa setiap parameter hanya dikirimkan sekali dan tidak ada parameter duplikat yang bisa dieksploitasi untuk bypass validasi.
+- **Batasi jumlah parameter:** Tentukan dan validasi jumlah parameter yang diizinkan dalam setiap request.
+
+**Penjelasan awam:** Jika sebuah formulir online memiliki kolom "nama" dan "email", sistem hanya boleh memproses kedua kolom itu — tidak boleh ada kolom tersembunyi seperti "level_admin" yang bisa dikirimkan penyerang untuk meningkatkan hak aksesnya sendiri. Sistem harus secara eksplisit menentukan kolom apa saja yang boleh diisi melalui formulir, dan mengabaikan sisanya.
+
+**Bukti dukung:** Source code review: apakah ada allowlist field untuk setiap form/endpoint? Pengujian mass assignment: kirim parameter tambahan yang tidak seharusnya bisa diubah — sistem harus mengabaikannya.
+
+**EDK/EIK/EEK:** Tinjau standar pengembangan terkait mass assignment prevention; uji endpoint dengan parameter tambahan; verifikasi allowlist field aktif.
+
+---
+
+### e. Memastikan data disimpan dengan aman
+
+**Penjelasan teknis:** Penyimpanan data yang aman mencakup:
+
+- **Enkripsi data at rest:** Data sensitif dienkripsi di database (field-level encryption atau Transparent Data Encryption).
+- **Database hardening:** Database dikonfigurasi dengan aman: remote access dibatasi, default credential diganti, port database tidak terekspos ke internet publik, akun database dengan least privilege.
+- **Backup terenkripsi:** Semua backup dienkripsi.
+- **Retensi data:** Data hanya disimpan selama diperlukan — setelah melewati masa retensi, dihapus secara aman.
+- **Pemisahan data:** Data dari tenant berbeda tidak bercampur (multi-tenancy isolation).
+
+**Penjelasan awam:** "Menyimpan dengan aman" artinya lebih dari sekadar memasukkan data ke database. Database-nya sendiri harus dikunci (tidak bisa diakses dari internet), datanya dienkripsi di dalam database, dan backup-nya juga dienkripsi. Ini seperti tidak hanya mengunci lemari arsip, tapi juga menempatkan lemari tersebut di ruangan yang dikunci, dan menyimpan salinan dokumennya di brankas terpisah.
+
+**Bukti dukung:** Konfigurasi database (network binding, akses terbatas, enkripsi at rest); bukti enkripsi backup; kebijakan retensi data.
+
+**EDK/EIK/EEK:** Tinjau konfigurasi database dan kebijakan penyimpanan; verifikasi enkripsi at rest dan backup; periksa network exposure database.
+
+---
+
+### f. Menentukan metode untuk menghapus dan mengekspor data sesuai permintaan pengguna
+
+**Penjelasan teknis:** Sesuai amanat UU PDP No. 27 Tahun 2022, pengguna punya hak:
+
+- **Right to erasure:** Meminta penghapusan data pribadinya — sistem harus bisa menghapus data dari seluruh penyimpanan (database primer, backup, cache, log yang memungkinkan).
+- **Right to data portability:** Meminta ekspor datanya dalam format yang dapat dibaca mesin (JSON, CSV). Sistem harus menyediakan mekanisme ekspor yang aman.
+- **Proses terverifikasi:** Permintaan hapus/ekspor harus melalui verifikasi identitas pengguna terlebih dahulu.
+- **Konfirmasi dan audit:** Setiap penghapusan dan ekspor data harus dikonfirmasi ke pengguna dan dicatat dalam audit log.
+
+**Penjelasan awam:** Sesuai undang-undang, warga negara berhak meminta agar data pribadinya dihapus dari sistem pemerintah, atau meminta salinan datanya untuk dibawa ke instansi lain. Sistem harus menyediakan mekanisme yang mudah dan aman untuk ini — bukan sekedar "nanti kami proses secara manual".
+
+**Bukti dukung:** Fitur hapus/ekspor data yang tersedia di aplikasi; SOP penanganan permintaan hak subjek data; audit log permintaan dan eksekusi hapus/ekspor data.
+
+**EDK/EIK/EEK:** Tinjau apakah sistem menyediakan mekanisme hapus/ekspor data sesuai UU PDP; uji fungsi hapus dan ekspor; verifikasi audit trail tersedia.
+
+---
+
+### g. Membersihkan memori setelah tidak diperlukan
+
+**Penjelasan teknis:** Data sensitif yang diproses dalam memori (RAM) harus dibersihkan setelah tidak digunakan:
+
+- **Sensitive data in memory:** Setelah password atau kunci kriptografi selesai digunakan, lokasi memorinya harus ditimpa (overwrite) — jangan hanya dilepas ke garbage collector.
+- **Bahasa dengan GC (Python, Java, JS):** Susah untuk benar-benar zero-out memori karena GC. Gunakan library khusus atau prinsip minimasi exposure time.
+- **Bahasa dengan manual memory management (C/C++/Rust):** Gunakan `memset()` atau `SecureZeroMemory()` untuk menimpa data sensitif sebelum membebaskan memori.
+- **Core dump:** Pastikan core dump dinonaktifkan atau dienkripsi di production — core dump bisa mengekspos seluruh isi memori proses.
+- **Swap encryption:** Enkripsi swap partition untuk mencegah data sensitif yang tersimpan di swap bisa dibaca.
+
+**Penjelasan awam:** Saat komputer memproses data sensitif seperti password, data tersebut ada di memori RAM untuk sementara. Jika tidak dibersihkan setelah selesai, data itu bisa "terbaca" oleh program lain atau penyerang yang berhasil mengakses memori. Membersihkan memori seperti menghapus tulisan di papan tulis yang berbagi ruangan — setelah selesai digunakan, hapus agar tidak bisa dibaca orang berikutnya.
+
+**Bukti dukung:** Code review pada penanganan data sensitif di memori; konfigurasi core dump (dinonaktifkan di production); enkripsi swap jika digunakan.
+
+**EDK/EIK/EEK:** Tinjau kebijakan dan implementasi pembersihan memori untuk data sensitif; verifikasi core dump dinonaktifkan; review kode penanganan data sensitif.
+
+---
+
+## 8. Keamanan Komunikasi
+
+> **Konteks regulasi:** Pasal 27 ayat (8) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan semua komunikasi data — baik antar pengguna dan sistem maupun antar sistem — dilakukan melalui kanal yang terenkripsi dan terautentikasi.
+
+---
+
+### a. Menggunakan komunikasi terenkripsi
+
+**Penjelasan teknis:** Semua komunikasi jaringan yang membawa data sensitif harus dienkripsi end-to-end:
+
+- **TLS untuk HTTP:** HTTPS wajib untuk semua aplikasi web (sudah dibahas di autentikasi 1g, tapi berlaku lebih luas di sini).
+- **TLS untuk database connection:** Koneksi dari aplikasi ke database harus menggunakan TLS, bukan plain TCP.
+- **TLS untuk inter-service communication:** Komunikasi antar microservice/API internal juga harus terenkripsi (Service Mesh, mTLS).
+- **Enkripsi email:** Jika aplikasi mengirim email berisi data sensitif, gunakan TLS untuk SMTP (STARTTLS atau SMTPS) dan pertimbangkan S/MIME atau PGP untuk enkripsi konten email.
+- **VPN untuk akses jaringan internal:** Akses ke sistem internal dari luar jaringan harus melalui VPN.
+
+**Penjelasan awam:** Semua percakapan penting — baik antara pengguna dengan sistem maupun antara satu sistem dengan sistem lain — harus dilakukan di "ruang kedap suara" (enkripsi), bukan di tempat terbuka di mana siapa saja bisa mendengarkan. Ini berlaku untuk semua jenis komunikasi, tidak hanya yang terlihat oleh pengguna.
+
+**Bukti dukung:** Konfigurasi TLS di semua layer (web, database, inter-service); scan port yang menunjukkan tidak ada layanan yang berjalan di plain text untuk data sensitif; konfigurasi VPN untuk akses remote.
+
+**EDK:** Tinjau apakah kebijakan instansi mewajibkan enkripsi untuk semua jenis komunikasi yang membawa data sensitif.
+
+**EIK:** Verifikasi TLS aktif di semua layer komunikasi: web (HTTPS), database (SSL connection string), API internal. Scan untuk layanan yang menggunakan plain text.
+
+**EEK:** Indikator: tidak ada komunikasi data sensitif yang terjadi tanpa enkripsi, semua koneksi menggunakan TLS 1.2+.
+
+---
+
+### b. Mengatur koneksi masuk dan keluar yang aman dan terenkripsi dari sisi pengguna
+
+**Penjelasan teknis:** Kontrol koneksi masuk (inbound) dan keluar (outbound):
+
+- **Inbound:** Semua koneksi dari user ke server harus melalui HTTPS. HTTP redirect ke HTTPS. Firewall/WAF memfilter traffic mencurigakan.
+- **Outbound:** Koneksi dari server ke pihak ketiga (API eksternal, layanan email, webhook) juga harus menggunakan TLS dan memvalidasi sertifikat tujuan — jangan nonaktifkan verifikasi sertifikat SSL (`verify=False` di Python requests, `curl -k`).
+- **Certificate pinning (opsional, untuk aplikasi mobile):** Mem-pin sertifikat yang diharapkan untuk mencegah MITM bahkan dengan sertifikat yang valid tapi tidak diharapkan.
+- **Mutual TLS (mTLS):** Untuk koneksi server-to-server sensitif, gunakan mTLS di mana kedua pihak saling memverifikasi sertifikat.
+
+**Penjelasan awam:** Tidak hanya koneksi masuk yang harus aman — ketika server menghubungi layanan lain (misal: mengirim notifikasi, memanggil API pihak ketiga), koneksi tersebut juga harus terenkripsi dan harus memverifikasi bahwa pihak yang dihubungi memang benar-benar pihak yang dimaksud, bukan penyamar.
+
+**Bukti dukung:** Konfigurasi outbound connection (verifikasi sertifikat aktif); firewall rules untuk inbound/outbound traffic; konfigurasi HTTPS-only untuk aplikasi.
+
+**EDK/EIK/EEK:** Tinjau kebijakan koneksi masuk/keluar; verifikasi konfigurasi outbound connection dengan SSL verification aktif; uji redirect HTTP ke HTTPS.
+
+---
+
+### c. Mengatur jenis algoritma yang digunakan dan alat pengujiannya
+
+**Penjelasan teknis:** Dokumen cipher suite yang diizinkan untuk TLS:
+
+- **Cipher suite yang direkomendasikan (TLS 1.3):** `TLS_AES_256_GCM_SHA384`, `TLS_CHACHA20_POLY1305_SHA256`, `TLS_AES_128_GCM_SHA256`
+- **Cipher suite yang masih aman (TLS 1.2):** Suite dengan ECDHE untuk perfect forward secrecy, AES-GCM, SHA-256+
+- **Cipher suite yang harus dinonaktifkan:** RC4, DES, 3DES, NULL cipher, export cipher, ANON cipher, MD5 dalam cipher suite
+- **Alat pengujian:** SSL Labs, testssl.sh, nmap ssl-enum-ciphers, OWASP SSL Testing Guide
+- Konfigurasi cipher suite di web server (Nginx/Apache) dan load balancer harus dikontrol secara eksplisit — jangan biarkan server memilih sendiri.
+
+**Penjelasan awam:** TLS punya banyak "metode enkripsi" yang bisa dipilih — beberapa kuat, beberapa sudah terbukti lemah. Seperti memilih gembok: ada yang susah dibobol, ada yang terlihat bagus tapi mudah dibuka. Konfigurasi server harus secara eksplisit hanya mengizinkan metode enkripsi yang kuat, dan secara berkala diuji menggunakan alat khusus untuk memastikan tidak ada metode lemah yang tersisa.
+
+**Bukti dukung:** Konfigurasi cipher suite di web server; hasil SSL Labs (grade A minimal); hasil testssl.sh; kebijakan yang mendefinisikan algoritma yang diizinkan dan dilarang.
+
+**EDK/EIK/EEK:** Tinjau kebijakan cipher suite yang berlaku; scan TLS konfigurasi dengan SSL Labs; verifikasi tidak ada cipher lemah yang diaktifkan.
+
+---
+
+### d. Mengatur aktivasi dan konfigurasi sertifikat elektronik yang diterbitkan oleh penyelenggara sertifikasi elektronik
+
+**Penjelasan teknis:** Di Indonesia, konteks ini mengacu pada:
+
+- **Sertifikat elektronik dari PSrE (Penyelenggara Sertifikasi Elektronik):** Untuk aplikasi pemerintah, sertifikat harus diterbitkan oleh PSrE yang diakui — bisa PSrE pemerintah (BSSN/BSrE) atau PSrE komersial yang tersertifikasi.
+- **Validitas sertifikat:** Sertifikat harus diperbarui sebelum kedaluwarsa. Pasang monitoring expiry date dan alert jauh sebelum expired (misal: 60 hari sebelum expiry).
+- **Revocation checking:** Konfigurasikan OCSP stapling atau CRL checking untuk memastikan sertifikat tidak dicabut.
+- **Wildcard vs. specific certificate:** Pertimbangkan risiko penggunaan wildcard certificate — jika satu subdomain dikompromikan, semua subdomain terdampak.
+- **Certificate transparency (CT) log:** Pantau CT log untuk mendeteksi sertifikat yang tidak sah yang mungkin diterbitkan atas nama domain instansi.
+
+**Penjelasan awam:** Sertifikat elektronik seperti KTP digital untuk website — membuktikan bahwa website yang diakses memang benar-benar milik instansi yang diklaim. Sertifikat ini diterbitkan oleh lembaga resmi yang terpercaya (PSrE), punya masa berlaku, dan harus diperbarui sebelum kadaluarsa. Jika sertifikat kadaluarsa, browser akan memperingatkan pengguna bahwa website mungkin tidak aman.
+
+**Bukti dukung:** Sertifikat SSL yang valid dari PSrE yang diakui; monitoring expiry sertifikat; prosedur pembaruan sertifikat; konfigurasi OCSP stapling.
+
+**EDK:** Tinjau apakah kebijakan instansi mengatur penggunaan sertifikat elektronik dari PSrE yang diakui, termasuk prosedur pembaruan dan monitoring expiry.
+
+**EIK:** Verifikasi sertifikat yang digunakan: diterbitkan oleh CA yang diakui, masa berlaku masih valid, domain sesuai. Verifikasi monitoring expiry aktif.
+
+**EEK:** Indikator: tidak ada sertifikat yang kedaluwarsa di production, ada proses otomatis pembaruan atau alert expiry, sertifikat dari PSrE yang diakui.
+
+---
+
+## 9. Pengendalian Kode Berbahaya
+
+> **Konteks regulasi:** Pasal 27 ayat (9) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan kode aplikasi dan library yang digunakan bebas dari malware, backdoor, dan fungsi berbahaya yang tidak diinginkan.
+
+---
+
+### a. Menggunakan analisis kode dalam kontrol kode berbahaya
+
+**Penjelasan teknis:** Implementasi **Static Application Security Testing (SAST)** dan code review dalam pipeline pengembangan:
+
+- **SAST Tools:** SonarQube, Checkmarx, Semgrep, Bandit (Python), ESLint security plugins, CodeQL (GitHub Actions). Tools ini menganalisis source code tanpa menjalankan program untuk mendeteksi pola kode yang berpotensi berbahaya.
+- **Code review:** Setiap perubahan kode harus melalui peer review — minimal satu developer lain harus menyetujui sebelum di-merge.
+- **Secret scanning:** Gunakan tools seperti GitGuardian, TruffleHog, atau git-secrets untuk mendeteksi credential/secret yang tidak sengaja ter-commit ke repository.
+- **Dependency analysis:** Analisis keamanan dependency (npm audit, pip-audit, OWASP Dependency-Check).
+- **CI/CD integration:** SAST harus berjalan otomatis di CI/CD pipeline — build gagal jika ditemukan kerentanan kritis.
+
+**Penjelasan awam:** Sebelum kode aplikasi dijalankan oleh pengguna, harus diperiksa terlebih dahulu secara otomatis oleh alat khusus — seperti mesin X-ray yang memeriksa bagasi penumpang sebelum masuk bandara. Alat ini mencari pola kode yang mencurigakan atau berbahaya. Selain itu, developer lain juga harus memeriksa kode secara manual sebelum digunakan.
+
+**Bukti dukung:** Konfigurasi SAST tools dalam CI/CD pipeline; laporan hasil SAST scan; prosedur code review (pull request policy); hasil secret scanning.
+
+**EDK:** Tinjau apakah instansi memiliki kebijakan yang mewajibkan analisis kode keamanan (SAST) dan code review dalam proses pengembangan aplikasi.
+
+**EIK:** Verifikasi SAST tools aktif di CI/CD pipeline. Review proses code review (apakah ada mandatory peer review?). Cek laporan SAST terbaru.
+
+**EEK:** Indikator: tidak ada kerentanan kritis yang lolos ke production tanpa di-address, semua kode melalui code review dan SAST sebelum di-deploy.
+
+---
+
+### b. Memastikan kode sumber aplikasi dan pustaka tidak mengandung kode berbahaya dan fungsionalitas lain yang tidak diinginkan
+
+**Penjelasan teknis:**
+
+- **Supply chain security:** Verifikasi integritas library pihak ketiga — download dari sumber resmi, periksa checksum/hash, gunakan lock file (package-lock.json, requirements.txt dengan hash). Serangan supply chain (seperti kasus `event-stream` npm atau SolarWinds) menyisipkan kode berbahaya ke dalam library yang populer.
+- **Software Bill of Materials (SBOM):** Buat dan maintain daftar lengkap semua komponen yang digunakan beserta versinya.
+- **Backdoor detection:** Review kode untuk fungsionalitas tersembunyi: hardcoded credential, debug code yang tertinggal, undocumented API endpoint, atau logika yang tidak sesuai spesifikasi.
+- **Dead code removal:** Hapus kode yang tidak lagi digunakan — dead code sulit di-audit dan bisa menyembunyikan kerentanan.
+- **Antivirus scanning:** Scan file yang di-upload pengguna dengan antivirus engine.
+
+**Penjelasan awam:** Library pihak ketiga yang digunakan aplikasi seperti komponen yang dibeli dari supplier luar — harus dipastikan tidak ada "jebakan" atau "pintu belakang" yang disisipkan. Bayangkan membeli komponen elektronik yang ternyata ada chip pemata-mata di dalamnya. Verifikasi integritas komponen dari supplier adalah langkah kritis yang sering diabaikan.
+
+**Bukti dukung:** Lock file dependencies dengan hash verification; SBOM (Software Bill of Materials); hasil dependency vulnerability scan; proses verifikasi checksum saat download library.
+
+**EDK/EIK/EEK:** Tinjau kebijakan dan implementasi supply chain security; verifikasi lock file dan checksum; review SBOM; cek proses audit dependency.
+
+---
+
+### c. Mengatur izin terkait fitur atau sensor terkait privasi
+
+**Penjelasan teknis:** Aplikasi web dan mobile harus menerapkan prinsip **data minimization** pada akses fitur device:
+
+- **Web browser permissions:** Minta permission hanya untuk yang benar-benar diperlukan (kamera, mikrofon, lokasi, notifikasi). Jangan minta permission saat pertama kali aplikasi dibuka — minta saat fitur yang memerlukan permission tersebut digunakan.
+- **Purpose limitation:** Jelaskan dengan jelas kepada pengguna mengapa permission tersebut diperlukan.
+- **Revocation:** Pengguna harus bisa mencabut permission kapan saja.
+- **No silent collection:** Tidak ada pengumpulan data sensor/fitur tanpa sepengetahuan dan persetujuan pengguna.
+- **Privacy by design:** Pertimbangkan kebutuhan privasi sejak awal desain fitur, bukan ditambahkan belakangan.
+
+**Penjelasan awam:** Aplikasi tidak boleh diam-diam mengakses kamera, mikrofon, atau lokasi pengguna tanpa izin eksplisit. Dan saat meminta izin, harus jelas dijelaskan untuk apa izin tersebut digunakan. Pengguna juga harus bisa mencabut izin tersebut kapan saja jika tidak nyaman.
+
+**Bukti dukung:** Dokumentasi permission yang diminta aplikasi dan alasannya; implementasi just-in-time permission request; kebijakan privasi yang jelas.
+
+**EDK/EIK/EEK:** Tinjau daftar permission yang diminta aplikasi; verifikasi permission diminta secara kontekstual (bukan sekaligus di awal); uji kemampuan pengguna mencabut permission.
+
+---
+
+### d. Mengatur pelindungan integritas
+
+**Penjelasan teknis:** Memastikan kode dan file konfigurasi yang berjalan di production adalah versi yang sah dan tidak dimodifikasi:
+
+- **File integrity monitoring (FIM):** Tools seperti AIDE, Tripwire, atau Wazuh memantau perubahan file-file kritis dan memberikan alert jika ada modifikasi yang tidak diotorisasi.
+- **Code signing:** Deploy artifact (Docker image, binary) yang ditandatangani secara kriptografi — verifikasi signature sebelum deploy.
+- **Immutable infrastructure:** Gunakan paradigma immutable deployment — server tidak pernah dimodifikasi langsung, selalu di-rebuild dari image yang baru dan divalidasi.
+- **Checksum verification:** Verifikasi checksum file yang di-download sebelum digunakan.
+- **Sub-resource Integrity (SRI):** Untuk file JavaScript/CSS yang di-load dari CDN, gunakan SRI attribute (`integrity="sha384-..."`) agar browser memverifikasi integritas file sebelum menjalankannya.
+
+**Penjelasan awam:** Memastikan kode yang berjalan di server adalah persis kode yang sudah disetujui — tidak ada yang berhasil mengubahnya secara diam-diam. Seperti segel pada obat-obatan: jika segel rusak, berarti ada yang sudah membuka kemasan dan mungkin mengubah isinya. FIM adalah "segel digital" yang terus memantau apakah ada perubahan yang tidak sah.
+
+**Bukti dukung:** Konfigurasi FIM tools yang aktif; proses code signing untuk deployment artifact; konfigurasi SRI untuk asset eksternal; alert jika ada perubahan file yang tidak diotorisasi.
+
+**EDK/EIK/EEK:** Tinjau kebijakan integritas kode; verifikasi FIM aktif di server production; periksa SRI pada asset eksternal; simulasi perubahan file — apakah alert terpicu?
+
+---
+
+### e. Mengatur mekanisme fitur pembaruan
+
+**Penjelasan teknis:** Proses update/patch aplikasi harus aman:
+
+- **Update melalui jalur resmi:** Update hanya dari source yang terverifikasi (repository resmi, registry internal). Tidak ada manual download dari internet sembarangan.
+- **Staging environment:** Setiap update diuji di environment staging sebelum di-deploy ke production.
+- **Rollback plan:** Selalu ada plan rollback yang terdokumentasi dan diuji — jika update bermasalah, bisa kembali ke versi sebelumnya dengan cepat.
+- **Signed updates:** Update artifact harus ditandatangani dan signature diverifikasi sebelum diinstal.
+- **Auto-update dengan verifikasi:** Jika menggunakan auto-update, pastikan proses update memverifikasi integritas dan authenticity dari update sebelum mengaplikasikannya.
+- **Change management:** Setiap update harus melalui proses change management yang terdokumentasi — tidak ada "hotfix" yang langsung ke production tanpa review.
+
+**Penjelasan awam:** Pembaruan aplikasi harus datang dari sumber yang terpercaya dan melalui proses yang terverifikasi — tidak asal download dari internet. Sebelum pembaruan diterapkan ke sistem yang digunakan pengguna, harus diuji terlebih dahulu di lingkungan percobaan. Dan selalu ada rencana untuk kembali ke versi lama jika pembaruan baru menimbulkan masalah.
+
+**Bukti dukung:** Prosedur change management untuk update; konfigurasi staging environment; rollback procedure; proses verifikasi update sebelum deployment.
+
+**EDK/EIK/EEK:** Tinjau kebijakan change management; verifikasi adanya staging environment; uji prosedur rollback; periksa apakah update diverifikasi sebelum deployment.
+
+---
+
+## 10. Logika Bisnis
+
+> **Konteks regulasi:** Pasal 27 ayat (10) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan alur proses bisnis dalam aplikasi tidak bisa dimanipulasi untuk mendapatkan keuntungan yang tidak semestinya atau melewati tahapan yang seharusnya wajib dilalui.
+
+---
+
+### a. Memproses alur logika bisnis dalam urutan langkah dan waktu yang realistis
+
+**Penjelasan teknis:** Alur proses bisnis harus dipaksakan di sisi server dan tidak bisa di-skip atau dibalik:
+
+- **State machine enforcement:** Implementasikan alur bisnis sebagai state machine yang eksplisit — setiap transisi state hanya bisa terjadi jika pre-condition terpenuhi. Misal: tidak bisa submit formulir tanpa melewati validasi awal.
+- **Sequence validation:** Server harus memvalidasi bahwa langkah-langkah dilakukan dalam urutan yang benar — tidak bisa langsung lompat ke langkah 5 tanpa menyelesaikan langkah 1-4.
+- **Timing validation:** Tambahkan validasi waktu realistis — jika proses manusia biasanya butuh minimal 30 detik, request yang selesai dalam 0.1 detik harus dicurigai (bot/automation).
+- **Anti-race condition:** Gunakan database transaction, locking, atau idempotency key untuk mencegah race condition di mana dua proses bersamaan bisa mengeksploitasi jeda waktu.
+
+**Penjelasan awam:** Alur pengajuan dokumen di kantor harus dilakukan berurutan: isi formulir → validasi → tanda tangan → submit. Sistem tidak boleh mengizinkan seseorang langsung lompat ke tahap submit tanpa melewati tahap sebelumnya. Dan jika seseorang "menyelesaikan" formulir 50 halaman dalam 1 detik, itu jelas tidak wajar — pasti menggunakan bot.
+
+**Risiko jika tidak diterapkan:** Penyerang bisa melewati tahapan validasi, mengeksploitasi race condition, atau menggunakan bot untuk mendapatkan keuntungan yang tidak semestinya (misal: mendaftar ribuan tiket sekaligus).
+
+**Bukti dukung:** Dokumentasi state machine/flowchart alur bisnis; pengujian skip-step (coba langsung ke langkah akhir tanpa langkah sebelumnya — harus ditolak); implementasi timing validation.
+
+**EDK:** Tinjau apakah SOP/dokumentasi teknis mendefinisikan alur logika bisnis yang harus diikuti dan mekanisme enforcement-nya di sistem.
+
+**EIK:** Uji bypass alur bisnis: coba langsung submit tanpa melewati tahapan wajib — sistem harus menolak. Uji race condition pada proses yang rentan.
+
+**EEK:** Indikator: tidak ada temuan business logic bypass pada pentest, race condition tidak dapat dieksploitasi.
+
+---
+
+### b. Memastikan logika bisnis memiliki batasan dan validasi
+
+**Penjelasan teknis:** Setiap aturan bisnis harus memiliki batasan yang divalidasi secara eksplisit:
+
+- **Limit enforcement:** Batas kuantitas, batas nilai, batas frekuensi harus divalidasi di server. Contoh: tidak bisa mengajukan lebih dari 1 permohonan aktif per pengguna, nilai input tidak bisa negatif, tanggal tidak bisa di masa lampau untuk jadwal ke depan.
+- **Business rule validation:** Validasi aturan bisnis yang kompleks (misal: syarat kelayakan, batas anggaran) harus dilakukan di server — tidak cukup di UI.
+- **Cross-field validation:** Validasi yang melibatkan beberapa field sekaligus (misal: tanggal mulai harus sebelum tanggal selesai, total item harus sesuai jumlah yang dinyatakan).
+
+**Penjelasan awam:** Sistem harus memiliki "aturan bisnis" yang jelas dan tidak bisa dilanggar. Seperti aturan di kantor pelayanan: satu orang hanya bisa mengajukan satu permohonan pada satu waktu, nilai tidak boleh melebihi batas anggaran. Aturan-aturan ini harus dikenforce oleh sistem — tidak bisa disiasati dengan memanipulasi data.
+
+**Bukti dukung:** Dokumentasi business rules yang diimplementasikan; source code review: validasi batasan di server; pengujian edge case (input di batas minimum/maksimum, input negatif, dsb.).
+
+**EDK/EIK/EEK:** Tinjau dokumentasi business rules; uji batasan dan validasi dengan input edge case; verifikasi validasi ada di server.
+
+---
+
+### c. Memonitor aktivitas yang tidak biasa
+
+**Penjelasan teknis:** Implementasi **behavioral analytics** dan anomaly detection:
+
+- **Baseline normal behavior:** Tentukan apa yang "normal" untuk setiap pengguna dan proses (frekuensi transaksi, volume data yang diakses, jam aktivitas).
+- **Anomaly detection:** Deteksi penyimpangan dari baseline: login dari lokasi/IP yang tidak biasa, volume transaksi yang tiba-tiba melonjak, akses data dalam jumlah besar dalam waktu singkat.
+- **SIEM integration:** Kirim log ke SIEM (Security Information and Event Management) untuk korelasi event dan deteksi pola serangan yang tersebar.
+- **Alert otomatis:** Kirim notifikasi ke tim keamanan saat anomali terdeteksi.
+
+**Penjelasan awam:** Seperti bank yang mendeteksi transaksi mencurigakan — jika tiba-tiba ada transaksi besar dari negara lain atau frekuensi transaksi yang tidak biasa, sistem otomatis memberikan peringatan. Monitoring aktivitas tidak biasa di aplikasi pemerintah bekerja sama: jika ada pengguna yang tiba-tiba mengakses ribuan data dalam hitungan menit, atau login dari lokasi yang tidak pernah digunakan sebelumnya, sistem harus memberikan peringatan.
+
+**Bukti dukung:** Konfigurasi monitoring/alerting untuk aktivitas tidak biasa; integrasi dengan SIEM; laporan anomali yang terdeteksi; SOP response terhadap alert anomali.
+
+**EDK/EIK/EEK:** Tinjau mekanisme monitoring dan alerting; verifikasi SIEM integration; simulasikan aktivitas tidak biasa — apakah alert terpicu?
+
+---
+
+### d. Membantu dalam kontrol antiotomatisasi
+
+**Penjelasan teknis:** Mencegah otomatisasi yang tidak sah (bot, script) pada fungsi-fungsi bisnis:
+
+- **CAPTCHA:** Tambahkan CAPTCHA (Google reCAPTCHA, hCaptcha, atau Friendly CAPTCHA) pada form yang rentan terhadap otomatisasi (login, registrasi, submit permohonan).
+- **Rate limiting per aksi bisnis:** Batasi berapa kali satu user bisa melakukan aksi tertentu dalam periode waktu tertentu.
+- **Honeypot fields:** Tambahkan field tersembunyi (via CSS display:none) yang hanya akan diisi oleh bot — jika field ini terisi, request dianggap dari bot.
+- **Behavioral biometrics:** Analisis pola interaksi pengguna (kecepatan mengetik, gerakan mouse) untuk membedakan manusia dan bot.
+- **Token bucket / leaky bucket algorithm:** Untuk API yang bisa dieksploitasi oleh bot.
+
+**Penjelasan awam:** Beberapa fungsi harus dilindungi dari serangan bot — program otomatis yang bisa mengisi ribuan formulir atau mengakses data secara massal dalam hitungan detik. CAPTCHA adalah yang paling familiar: "klik semua gambar yang ada lampu lalu lintas" — manusia bisa, bot sulit. Mekanisme lain bekerja di belakang layar untuk membedakan perilaku manusia dari mesin.
+
+**Bukti dukung:** Konfigurasi CAPTCHA pada form kritis; konfigurasi rate limiting per aksi bisnis; implementasi honeypot jika ada; laporan bot detection.
+
+**EDK/EIK/EEK:** Tinjau implementasi anti-otomatisasi; verifikasi CAPTCHA aktif pada form kritis; uji rate limiting per aksi; coba simulasi bot — apakah terdeteksi dan diblokir?
+
+---
+
+### e. Memberikan peringatan ketika terjadi serangan otomatis atau aktivitas yang tidak biasa
+
+**Penjelasan teknis:** Ini adalah output dari monitoring (kontrol 10c dan 10d) — mekanisme alerting yang memastikan tim keamanan mendapat notifikasi:
+
+- **Real-time alerting:** Alert dikirim segera (bukan batch harian) saat threshold terlampaui.
+- **Kanal notifikasi:** Email, SMS, Slack/Teams, PagerDuty, atau sistem ticketing internal.
+- **Alert fatigue prevention:** Kalibrasi threshold dengan baik — terlalu banyak false positive menyebabkan tim mengabaikan alert. Implementasikan alert prioritization.
+- **Escalation policy:** Jika alert level tinggi tidak di-acknowledge dalam waktu tertentu, eskalasi otomatis ke tingkat yang lebih tinggi.
+- **Incident response integration:** Alert harus otomatis membuat tiket insiden di sistem ticketing (Jira, ServiceNow) untuk tracking dan accountability.
+
+**Penjelasan awam:** Deteksi saja tidak cukup — tim keamanan harus diberitahu segera saat ada yang mencurigakan. Seperti alarm kebakaran yang tidak hanya berbunyi di lokasi, tapi juga langsung menghubungi pemadam kebakaran. Waktu respons sangat penting: semakin cepat tim keamanan tahu, semakin cepat bisa bertindak sebelum kerusakan meluas.
+
+**Bukti dukung:** Konfigurasi alerting system; bukti notifikasi diterima saat simulasi serangan; SOP response insiden; sistem escalation policy.
+
+**EDK/EIK/EEK:** Tinjau kebijakan alerting dan incident response; simulasikan serangan otomatis — apakah alert diterima tim? Verifikasi escalation policy.
+
+---
+
+## 11. File
+
+> **Konteks regulasi:** Pasal 27 ayat (11) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan fitur upload/download file tidak menjadi vektor serangan — mencegah upload malware, file berbahaya, atau penggunaan berlebihan yang mengganggu layanan.
+
+---
+
+### a. Mengatur jumlah file untuk setiap pengguna dan kuota ukuran file yang diunggah
+
+**Penjelasan teknis:** Batasan yang wajib diimplementasikan:
+
+- **Ukuran file maksimum:** Tentukan ukuran maksimum per file (misal: 10MB untuk dokumen, 5MB untuk gambar). Validasi di server — jangan hanya di client. Konfigurasi di web server (Nginx `client_max_body_size`, Express `multer` limit).
+- **Kuota per pengguna:** Total penyimpanan yang bisa digunakan per pengguna (misal: 100MB per akun).
+- **Jumlah file maksimum:** Batasi berapa file yang bisa di-upload dalam satu request dan per periode waktu.
+- **Rate limiting upload:** Batasi frekuensi upload untuk mencegah DoS melalui upload massal. Tanpa batasan ini, satu pengguna bisa menghabiskan seluruh storage server atau membuat server kewalahan (Denial of Service melalui resource exhaustion).
+
+**Penjelasan awam:** Layanan email dan cloud storage membatasi ukuran attachment dan total storage per pengguna — bukan untuk menyulitkan, tapi untuk memastikan layanan tetap berjalan lancar untuk semua pengguna. Tanpa batasan, satu pengguna iseng atau jahat bisa mengunggah file sangat besar hingga sistem tidak bisa melayani pengguna lain.
+
+**Bukti dukung:** Konfigurasi limit upload di web server dan aplikasi; kebijakan kuota per pengguna; pengujian: upload file melebihi batas — server harus menolak dengan pesan yang jelas.
+
+**EDK:** Tinjau apakah kebijakan instansi mendefinisikan batasan ukuran dan kuota file upload per pengguna.
+
+**EIK:** Uji upload file melebihi batas yang ditentukan — server harus menolak. Verifikasi batasan dikonfigurasi di sisi server (bukan hanya client-side).
+
+**EEK:** Indikator: tidak ada insiden resource exhaustion akibat upload file tidak terbatas, batasan berfungsi konsisten di semua endpoint upload.
+
+---
+
+### b. Melakukan validasi file sesuai dengan tipe konten yang diharapkan
+
+**Penjelasan teknis:** Validasi file upload harus berlapis:
+
+- **Validasi ekstensi file:** Hanya ekstensi yang diizinkan yang diterima (allowlist, bukan blacklist). Misal: hanya `.pdf`, `.docx`, `.jpg`, `.png`.
+- **Validasi MIME type di server:** Jangan percaya MIME type yang dikirim client (`Content-Type` header bisa dipalsukan). Periksa magic bytes (file signature) menggunakan library seperti `python-magic` atau `file-type` (Node.js). File PDF selalu dimulai dengan `%PDF-`, PNG dengan `\x89PNG`, dsb.
+- **Deep content validation:** Untuk dokumen Office, bisa dilakukan scan struktur internal.
+- **Rename file setelah upload:** Ganti nama file dengan nama yang di-generate server (UUID/hash) — jangan gunakan nama asli dari user karena bisa mengandung path traversal (misal: `../../etc/passwd`).
+- **Jangan simpan di webroot:** File yang di-upload tidak boleh langsung tersedia sebagai URL yang bisa dieksekusi oleh web server. Simpan di luar webroot atau di object storage (S3, MinIO).
+
+**Penjelasan awam:** Penyerang bisa mengganti nama file berbahaya menjadi sesuatu yang terlihat aman — misal, virus yang diubah namanya menjadi "laporan.pdf". Validasi file yang benar memeriksa "isi" file, bukan hanya nama atau ekstensinya — seperti petugas bandara yang memeriksa isi bagasi bukan hanya membaca label luarnya.
+
+**Risiko jika tidak diterapkan:** Upload malware/web shell yang bisa dieksekusi di server, path traversal attack, upload file executable yang bisa memicu RCE.
+
+**Bukti dukung:** Source code review: validasi menggunakan magic bytes bukan hanya ekstensi; konfigurasi penyimpanan file di luar webroot; pengujian: upload file executable yang disamarkan sebagai PDF — server harus menolak.
+
+**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan validasi file upload menggunakan pemeriksaan tipe konten aktual (magic bytes) dan allowlist ekstensi.
+
+**EIK:** Uji upload file berbahaya yang disamarkan (ganti ekstensi PHP menjadi .jpg, dsb.) — server harus menolak berdasarkan konten aktual, bukan hanya ekstensi.
+
+**EEK:** Indikator: tidak ada web shell atau file berbahaya yang berhasil di-upload dan dieksekusi pada pentest.
+
+---
+
+### c. Melakukan pelindungan terhadap metadata input dan metadata file
+
+**Penjelasan teknis:** File yang di-upload sering mengandung metadata yang tidak diinginkan:
+
+- **EXIF data pada gambar:** Foto yang diambil smartphone mengandung EXIF metadata yang bisa berisi: GPS koordinat (lokasi pengambilan foto), model device, nama pemilik. Ini adalah privacy issue serius jika file yang di-upload kemudian bisa diakses publik.
+- **Document metadata:** File Word/PDF mengandung metadata: nama penulis, nama perusahaan, histori edit, komentar tersembunyi. Ini bisa mengekspos informasi internal.
+- **Stripping metadata:** Sebelum menyimpan atau mempublikasikan file, strip metadata menggunakan library: `Pillow` (Python) untuk gambar, `python-docx`, `PyMuPDF` untuk dokumen. Atau gunakan tools seperti `ExifTool`, `mat2`.
+- **Metadata injection via filename:** Nama file yang mengandung karakter khusus bisa menyebabkan path traversal atau injection — selalu rename dan sanitasi.
+
+**Penjelasan awam:** File digital sering membawa "label tersembunyi" yang tidak terlihat saat dibuka biasa — foto mungkin menyimpan koordinat GPS lokasi pengambilan, dokumen Word menyimpan nama penulis asli dan histori edit. Jika file ini di-publish tanpa dibersihkan, informasi sensitif tersebut bisa bocor tanpa disadari.
+
+**Bukti dukung:** Implementasi metadata stripping sebelum file disimpan/dipublikasikan; pengujian: upload foto, download — apakah EXIF data sudah dihapus?; kebijakan pengelolaan metadata file.
+
+**EDK/EIK/EEK:** Tinjau kebijakan pengelolaan metadata file; verifikasi implementasi metadata stripping; uji dengan file yang mengandung metadata sensitif.
+
+---
+
+### d. Melakukan pemindaian file yang diperoleh dari sumber yang tidak dipercaya
+
+**Penjelasan teknis:** Semua file yang di-upload pengguna dianggap tidak dipercaya dan harus dipindai:
+
+- **Antivirus/anti-malware scanning:** Integrasikan antivirus engine ke dalam pipeline upload. Opsi: ClamAV (open source, self-hosted), atau cloud AV API (VirusTotal, Windows Defender ATP API). Scan dilakukan sebelum file disimpan permanen.
+- **Sandboxed analysis:** File yang mencurigakan bisa dianalisis di sandbox terisolasi (Cuckoo Sandbox, ANY.RUN) sebelum diterima.
+- **Asynchronous scanning:** Untuk performa, scan bisa dilakukan secara async — file di-quarantine sementara, baru dipindahkan ke penyimpanan final setelah scan selesai dan clean.
+- **Scan file dari sumber eksternal:** Tidak hanya file dari user, tapi juga file yang di-download dari URL atau API eksternal.
+
+**Penjelasan awam:** Seperti surat yang masuk ke kantor pemerintah melewati mesin X-ray dan detektor bahan berbahaya sebelum sampai ke meja pegawai. Semua file yang diterima dari pengguna — tidak peduli siapa pengirimnya — harus dipindai terlebih dahulu untuk memastikan tidak mengandung virus atau malware sebelum disimpan di sistem.
+
+**Bukti dukung:** Konfigurasi antivirus scanning di pipeline upload; log hasil scan (file yang ditolak karena virus); dokumentasi integrasi AV engine.
+
+**EDK:** Tinjau apakah kebijakan instansi mewajibkan pemindaian antivirus/malware untuk semua file yang diunggah pengguna.
+
+**EIK:** Verifikasi antivirus scanning aktif di pipeline upload. Uji dengan file EICAR test file — sistem harus mendeteksi dan menolak.
+
+**EEK:** Indikator: semua file yang di-upload dipindai sebelum disimpan, malware terdeteksi dan di-quarantine, tidak ada file berbahaya yang lolos ke penyimpanan production.
+
+---
+
+### e. Melakukan konfigurasi server untuk mengunduh file sesuai ekstensi yang ditentukan
+
+**Penjelasan teknis:** Konfigurasi server harus memastikan file yang di-download diperlakukan dengan benar oleh browser:
+
+- **Content-Disposition header:** Tambahkan `Content-Disposition: attachment; filename="nama-file.pdf"` untuk memaksa browser mendownload file daripada menjalankannya di browser.
+- **Content-Type yang tepat:** Set MIME type yang benar untuk setiap tipe file — hindari `application/octet-stream` generik yang bisa disalahgunakan.
+- **X-Content-Type-Options: nosniff:** Mencegah browser menebak tipe konten yang berbeda dari yang dideklarasikan.
+- **Batasi ekstensi yang bisa didownload:** Server hanya mengizinkan download file dengan ekstensi yang sudah diizinkan — file dengan ekstensi tidak dikenal atau berbahaya tidak bisa diakses via URL langsung.
+- **Prevent direct execution:** File yang di-upload pengguna tidak boleh bisa dieksekusi oleh web server (pastikan `php_flag engine off` atau konfigurasi serupa di direktori upload, jika menggunakan server-side scripting).
+
+**Penjelasan awam:** Server harus mengontrol bagaimana browser menangani file yang didownload. Jika file PHP berbahaya yang di-upload bisa diakses via URL dan dieksekusi oleh server, penyerang mendapat akses penuh. Konfigurasi yang benar memastikan file upload diperlakukan sebagai data yang didownload — bukan kode yang dijalankan.
+
+**Bukti dukung:** Konfigurasi web server (Nginx/Apache) untuk direktori file upload; pengujian: upload file PHP, akses via URL — server harus mengembalikan file sebagai download, bukan mengeksekusinya; verifikasi Content-Disposition header.
+
+**EDK/EIK/EEK:** Tinjau konfigurasi server untuk file download; verifikasi Content-Disposition header aktif; uji akses langsung ke file yang di-upload.
+
+---
+
+## 12. Keamanan API dan Web Service
+
+> **Konteks regulasi:** Pasal 27 ayat (12) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan API dan web service yang diekspos diamankan dengan benar — baik dari sisi konfigurasi, autentikasi/otorisasi, validasi input, maupun perlindungan terhadap eksploitasi otomatis.
+
+---
+
+### a. Melakukan konfigurasi layanan web
+
+**Penjelasan teknis:** Konfigurasi dasar web service yang aman:
+
+- **Nonaktifkan metode HTTP yang tidak diperlukan:** Hanya izinkan GET, POST, PUT, DELETE sesuai kebutuhan. Nonaktifkan TRACE (rentan terhadap Cross-Site Tracing), OPTIONS jika tidak diperlukan untuk CORS.
+- **CORS yang ketat:** Konfigurasi `Access-Control-Allow-Origin` hanya untuk domain yang memang diizinkan — jangan gunakan wildcard `*` untuk API yang memerlukan autentikasi.
+- **Disable directory listing:** Web server tidak boleh menampilkan daftar file dalam direktori.
+- **Sembunyikan informasi server:** Hilangkan atau minimize header yang mengekspos informasi server (`Server: nginx`, `X-Powered-By: PHP/8.1`).
+- **Konfigurasi timeout yang tepat:** Request timeout, connection timeout untuk mencegah slowloris attack.
+- **Hardening web server:** Ikuti hardening guide untuk web server yang digunakan (CIS Benchmark untuk Nginx/Apache).
+
+**Penjelasan awam:** Konfigurasi web service seperti mengatur tata tertib kantor: pintu mana yang boleh digunakan (HTTP method yang diizinkan), siapa dari luar yang boleh masuk (CORS policy), dan tidak boleh ada papan pengumuman yang menunjukkan denah internal kantor (disable directory listing dan server info).
+
+**Bukti dukung:** Konfigurasi web server (Nginx/Apache config); hasil scan headers menggunakan securityheaders.com; verifikasi CORS policy; hardening checklist.
+
+**EDK:** Tinjau apakah standar konfigurasi server instansi mengacu pada hardening guide yang diakui (CIS Benchmark, OWASP).
+
+**EIK:** Periksa konfigurasi web server: CORS, HTTP methods yang diizinkan, directory listing, server header. Gunakan tools seperti Nikto, securityheaders.com.
+
+**EEK:** Indikator: tidak ada konfigurasi default yang tidak aman, CORS terkonfigurasi ketat, directory listing dinonaktifkan.
+
+---
+
+### b. Memverifikasi uniform resource identifier API tidak menampilkan informasi yang berpotensi sebagai celah keamanan
+
+**Penjelasan teknis:** Desain URL/endpoint API harus mengikuti prinsip information hiding:
+
+- **Jangan ekspos ID internal:** Gunakan UUID atau slug daripada auto-increment integer ID di URL (`/api/users/550e8400` lebih baik dari `/api/users/1`). Integer ID mudah di-enumerate untuk IDOR.
+- **Hindari informasi sensitif di URL:** Tidak boleh ada token, password, atau data sensitif di URL/query string — tercatat di server log dan browser history.
+- **Konsistensi respons 404:** Untuk resource yang tidak ada atau tidak bisa diakses pengguna, kembalikan 404 (bukan 403) — mencegah penyerang membedakan "tidak ada" vs "ada tapi tidak bisa diakses".
+- **Versioning API:** Gunakan versioning (misal: `/api/v1/`) untuk manajemen perubahan yang terkontrol.
+- **Hindari verbose endpoint naming:** Nama endpoint tidak boleh mengungkapkan detail implementasi (misal: jangan `/api/mysql-query`, `/api/exec-command`).
+
+**Penjelasan awam:** URL API seperti alamat yang diberikan kepada tamu — sebaiknya tidak mengandung informasi internal yang tidak perlu diketahui tamu. Nomor urut yang mudah ditebak (1, 2, 3...) memungkinkan orang iseng mencoba semua nomor untuk mengakses data yang bukan miliknya. ID acak yang panjang jauh lebih aman.
+
+**Bukti dukung:** Review desain URL API; verifikasi tidak ada informasi sensitif di URL; uji IDOR dengan enumerate ID; review API documentation apakah tidak mengekspos informasi berlebihan.
+
+**EDK/EIK/EEK:** Tinjau desain URL API; uji IDOR; verifikasi tidak ada informasi teknis yang terekspos di URL.
+
+---
+
+### c. Membuat keputusan otorisasi
+
+**Penjelasan teknis:** Setiap API endpoint harus membuat keputusan otorisasi yang eksplisit:
+
+- **Default deny:** Jika tidak ada otorisasi yang dikonfigurasi, akses ditolak — bukan diizinkan.
+- **Otorisasi di setiap endpoint:** Tidak ada endpoint yang "terlupa" diproteksi. Gunakan middleware/interceptor untuk memastikan semua endpoint di-cover.
+- **Object-level authorization:** Selain memeriksa apakah user punya akses ke tipe resource, periksa juga apakah user punya akses ke instance spesifik resource tersebut (mencegah BOLA — Broken Object Level Authorization, termasuk dalam OWASP API Security Top 10).
+- **Function-level authorization:** Pastikan aksi sensitif (delete, update, admin action) memerlukan level otorisasi yang tepat (BFLA — Broken Function Level Authorization).
+
+**Penjelasan awam:** Setiap "pintu" di API (endpoint) harus punya penjaga yang memutuskan siapa yang boleh masuk. Tidak boleh ada pintu yang terlupa tidak dijaga. Dan penjaga harus memeriksa tidak hanya "apakah kamu punya tiket masuk" tapi juga "apakah tiket kamu berlaku untuk ruangan ini dan untuk barang yang ada di dalamnya".
+
+**Bukti dukung:** Source code review: setiap endpoint memiliki authorization check; pengujian BOLA dan BFLA; dokumentasi authorization matrix.
+
+**EDK/EIK/EEK:** Tinjau authorization matrix API; uji akses endpoint tanpa otorisasi yang tepat; uji BOLA dengan mengakses resource milik user lain.
+
+---
+
+### d. Menampilkan metode RESTful hypertext transfer protocol apabila input pengguna dinyatakan valid
+
+**Penjelasan teknis:** API hanya memproses request dan mengembalikan respons setelah validasi input berhasil:
+
+- **Validate before process:** Seluruh validasi input harus dilakukan sebelum logika bisnis dijalankan — tidak ada partial processing.
+- **HTTP method semantics:** Gunakan HTTP method sesuai semantiknya: GET untuk read (idempotent, tidak mengubah state), POST untuk create, PUT/PATCH untuk update, DELETE untuk hapus. Jangan gunakan GET untuk aksi yang mengubah state (rentan terhadap CSRF dan caching).
+- **Status code yang tepat:** Kembalikan HTTP status code yang sesuai: 200 OK, 201 Created, 400 Bad Request (validasi gagal), 401 Unauthorized, 403 Forbidden, 404 Not Found, 422 Unprocessable Entity (semantic validation error), 500 Internal Server Error.
+- **Respons konsisten:** Format respons API harus konsisten (JSON schema yang terdefinisi) untuk semua endpoint.
+
+**Penjelasan awam:** API yang baik seperti loket pelayanan yang profesional: hanya memproses permintaan yang lengkap dan valid, mengembalikan jawaban yang jelas dan konsisten, dan menggunakan "kode status" yang tepat (misalnya: "permintaan diterima", "data tidak valid", "anda tidak berwenang") agar pengguna API tahu apa yang terjadi.
+
+**Bukti dukung:** API documentation (OpenAPI/Swagger spec); pengujian dengan input tidak valid — apakah validasi berjalan sebelum processing?; review HTTP method yang digunakan; verifikasi status code yang dikembalikan.
+
+**EDK/EIK/EEK:** Tinjau desain API (HTTP methods, status codes); uji API dengan input tidak valid sebelum processing; verifikasi konsistensi respons.
+
+---
+
+### e. Menggunakan validasi skema dan verifikasi sebelum menerima input
+
+**Penjelasan teknis:** Validasi input API menggunakan schema formal:
+
+- **JSON Schema validation:** Definisikan schema yang ketat untuk setiap request body menggunakan JSON Schema (OpenAPI Specification). Validasi secara otomatis menggunakan library: `jsonschema` (Python), `ajv` (Node.js), Hibernate Validator (Java).
+- **OpenAPI/Swagger spec:** Buat dan maintain API specification — ini sekaligus menjadi dokumentasi dan dasar untuk auto-generated validation.
+- **Strict mode:** Tolak field yang tidak ada dalam schema (additionalProperties: false) — mencegah mass assignment dan parameter pollution.
+- **Tipe data yang ketat:** Definisikan tipe data, format (email, date, uuid), range nilai, dan pola regex dalam schema.
+
+**Penjelasan awam:** Sebelum menerima data dari pengguna, API harus memverifikasi bahwa data tersebut sesuai dengan "template" yang sudah ditetapkan — jenis datanya benar, format sesuai, dan tidak ada kolom yang tidak diharapkan. Seperti formulir resmi yang hanya menerima data dalam format tertentu dan menolak data yang tidak sesuai kolom yang tersedia.
+
+**Bukti dukung:** OpenAPI specification yang lengkap; konfigurasi JSON schema validation di API; pengujian: kirim request dengan field ekstra atau tipe data salah — harus ditolak.
+
+**EDK/EIK/EEK:** Tinjau apakah API memiliki schema validation yang terdokumentasi; uji API dengan request yang melanggar schema; verifikasi strict mode aktif.
+
+---
+
+### f. Menggunakan metode pelindungan layanan berbasis web
+
+**Penjelasan teknis:** Lapisan perlindungan tambahan untuk API:
+
+- **API Gateway:** Gunakan API Gateway (Kong, AWS API Gateway, Nginx + Lua) sebagai single entry point yang menerapkan: autentikasi, rate limiting, logging, dan routing secara terpusat.
+- **WAF (Web Application Firewall):** Deploy WAF (ModSecurity, AWS WAF, Cloudflare WAF) untuk memfilter traffic berbahaya sebelum sampai ke aplikasi. WAF mendeteksi pola serangan umum (SQLi, XSS, LFI, RFI).
+- **DDoS protection:** Gunakan layanan proteksi DDoS (Cloudflare, AWS Shield) untuk memfilter traffic flood.
+- **API key / OAuth 2.0:** Autentikasi API menggunakan API key (untuk server-to-server) atau OAuth 2.0 dengan token (untuk user-facing API).
+- **Mutual TLS (mTLS):** Untuk API sensitif antar instansi pemerintah, pertimbangkan mTLS di mana kedua sisi memverifikasi sertifikat.
+
+**Penjelasan awam:** API membutuhkan lapisan keamanan berlapis — seperti pos keamanan di berbagai titik sebelum masuk ke gedung utama. WAF adalah pos pertama yang menyaring tamu mencurigakan, API Gateway adalah resepsionis yang memverifikasi identitas dan tujuan, dan autentikasi API adalah ID card yang harus ditunjukkan.
+
+**Bukti dukung:** Konfigurasi API Gateway; konfigurasi WAF dan rules yang aktif; bukti proteksi DDoS; mekanisme autentikasi API (API key, OAuth 2.0).
+
+**EDK/EIK/EEK:** Tinjau arsitektur keamanan API; verifikasi WAF dan API Gateway aktif; uji apakah request tanpa autentikasi ditolak; verifikasi rate limiting berfungsi.
+
+---
+
+### g. Menerapkan kontrol antiotomatisasi
+
+**Penjelasan teknis:** Sama seperti kontrol bisnis 10d, tapi spesifik untuk API:
+
+- **API-specific rate limiting:** Rate limit per API key, per endpoint, per IP. Berbeda limitnya antara endpoint read dan write.
+- **Throttling:** Kurangi kecepatan response secara progresif saat mendekati limit — bukan langsung blok.
+- **Bot detection pada API:** Analisis pola request: interval yang terlalu reguler, tidak ada variasi User-Agent, volume yang tidak realistis.
+- **CAPTCHA untuk API publik:** Jika API diakses via web app, proteksi dengan CAPTCHA untuk aksi sensitif.
+- **Idempotency keys:** Untuk aksi yang tidak boleh dieksekusi dua kali (pembayaran, submit permohonan), gunakan idempotency key untuk mencegah double-submit meski request dikirim dua kali.
+
+**Penjelasan awam:** API sangat rentan terhadap serangan otomatis karena dirancang untuk dikonsumsi oleh program — penyerang tinggal menulis script untuk mengirim ribuan request. Rate limiting dan anti-bot detection memastikan API tidak bisa disalahgunakan oleh program otomatis yang mencoba mengeksploitasi sistem secara massal.
+
+**Bukti dukung:** Konfigurasi rate limiting per endpoint; implementasi idempotency key; monitoring traffic API untuk pola bot; log penolakan request berlebihan.
+
+**EDK/EIK/EEK:** Tinjau rate limiting API; uji dengan kirim request melebihi limit; verifikasi idempotency untuk aksi kritis; simulasikan bot traffic.
+
+---
+
+## 13. Keamanan Konfigurasi
+
+> **Konteks regulasi:** Pasal 27 ayat (13) Perban BSSN No. 4 Tahun 2021.
+> 
+> **Tujuan:** Memastikan server, framework, dan semua komponen infrastruktur dikonfigurasi dengan aman — menghilangkan celah yang muncul bukan dari kode aplikasi, tapi dari konfigurasi yang salah atau tidak aman.
+
+---
+
+### a. Mengonfigurasi server sesuai rekomendasi server aplikasi dan kerangka kerja aplikasi yang digunakan
+
+**Penjelasan teknis:** Gunakan hardening guide yang sudah teruji sebagai acuan konfigurasi:
+
+- **CIS Benchmarks:** Center for Internet Security menerbitkan hardening guide untuk hampir semua platform (Linux, Windows Server, Nginx, Apache, MySQL, PostgreSQL, Docker, Kubernetes). Ini adalah referensi standar industri.
+- **Framework hardening guide:** Setiap framework punya checklist konfigurasi aman:
+    - Django: `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_HSTS_SECONDS`, `X_FRAME_OPTIONS`, `SECURE_CONTENT_TYPE_NOSNIFF`.
+    - Laravel: `APP_DEBUG=false`, `HTTPS only`, correct file permissions.
+    - Spring Boot: actuator endpoint security, HTTPS configuration.
+- **OS hardening:** Nonaktifkan service yang tidak diperlukan, tutup port yang tidak digunakan, terapkan principle of least privilege untuk system user.
+- **Database hardening:** Nonaktifkan remote root access, hapus test database, ganti default credential, batasi network binding.
+
+**Penjelasan awam:** Setiap platform teknologi (server, database, framework) punya "pengaturan pabrik" yang tidak selalu aman — mirip router WiFi baru yang password defaultnya "admin". Hardening adalah proses mengubah semua pengaturan default ke konfigurasi yang aman sesuai panduan dari para ahli keamanan.
+
+**Bukti dukung:** Checklist hardening yang sudah diaplikasikan (referensi CIS Benchmark); konfigurasi framework (settings.py, .env); hasil vulnerability scan infrastruktur; bukti nonaktifnya service yang tidak diperlukan.
+
+**EDK:** Tinjau apakah instansi memiliki panduan atau kebijakan konfigurasi server yang mengacu pada standar hardening yang diakui (CIS Benchmark atau setara).
+
+**EIK:** Lakukan configuration review menggunakan CIS Benchmark sebagai acuan. Verifikasi service yang tidak diperlukan sudah dinonaktifkan, konfigurasi framework sudah di-hardened.
+
+**EEK:** Indikator: hasil configuration audit menunjukkan kepatuhan terhadap hardening guide, tidak ditemukan konfigurasi default yang tidak aman saat pentest.
+
+---
+
+### b. Mendokumentasikan, menyalin konfigurasi, dan semua dependensi
+
+**Penjelasan teknis:** Infrastructure as Code (IaC) dan configuration management:
+
+- **IaC (Infrastructure as Code):** Dokumentasikan semua konfigurasi infrastruktur dalam kode yang bisa di-version-control: Terraform, Ansible, Docker Compose, Kubernetes manifests. Ini memastikan konfigurasi reproducible dan terdokumentasi.
+- **Configuration management:** Gunakan tools seperti Ansible, Chef, Puppet untuk menerapkan konfigurasi secara konsisten di semua server.
+- **Dependency documentation:** `requirements.txt` (Python), `package.json` + `package-lock.json` (Node.js), `pom.xml` (Maven), `Gemfile.lock` (Ruby) — semua dependencies terdokumentasi dengan versi yang spesifik.
+- **Backup konfigurasi:** Konfigurasi server di-backup secara berkala dan disimpan di lokasi yang aman dan terpisah dari production server.
+- **Change documentation:** Setiap perubahan konfigurasi didokumentasikan — siapa yang mengubah, apa yang diubah, kapan, dan mengapa.
+
+**Penjelasan awam:** Konfigurasi sistem seperti "resep" yang harus terdokumentasi dengan baik. Jika server tiba-tiba rusak dan harus diganti, resep ini yang digunakan untuk membangun ulang sistem yang identik. Tanpa dokumentasi, membangun ulang sistem bisa memakan waktu sangat lama dan hasilnya mungkin tidak sama.
+
+**Bukti dukung:** Repository IaC (Terraform, Ansible, Docker Compose); lock file untuk dependencies; backup konfigurasi yang terverifikasi; change log konfigurasi.
+
+**EDK:** Tinjau apakah instansi memiliki kebijakan dokumentasi konfigurasi dan penggunaan IaC atau configuration management tools.
+
+**EIK:** Verifikasi konfigurasi terdokumentasi dalam IaC; verifikasi semua dependency terdokumentasi dengan versi yang spesifik; verifikasi backup konfigurasi tersedia.
+
+**EEK:** Indikator: sistem bisa di-rebuild dari dokumentasi/IaC yang ada, tidak ada "undocumented configuration" yang hanya ada di satu server.
+
+---
+
+### c. Menghapus fitur, dokumentasi, sampel, dan konfigurasi yang tidak diperlukan
+
+**Penjelasan teknis:** Setiap komponen yang tidak diperlukan adalah permukaan serangan yang tidak perlu:
+
+- **Default credentials:** Hapus atau ubah semua akun dan password default (database `root`, admin panel default, framework default user).
+- **Sample/example files:** Hapus file contoh yang sering ada dalam instalasi default — misal `phpinfo.php`, contoh konfigurasi, demo aplikasi. File-file ini sering mengekspos informasi tentang konfigurasi sistem.
+- **Unused features/plugins:** Nonaktifkan atau hapus fitur, plugin, atau modul yang tidak digunakan. Setiap fitur yang aktif adalah permukaan serangan potensial.
+- **Debug/development tools:** Pastikan tools debug (phpmyadmin, debug toolbar, Swagger UI dengan full access) tidak tersedia di production, atau diproteksi dengan autentikasi yang ketat.
+- **Default error pages:** Ganti dengan custom error page yang tidak mengekspos informasi teknis.
+- **Unused open ports:** Tutup semua port yang tidak diperlukan menggunakan firewall.
+
+**Penjelasan awam:** Gedung yang aman tidak memiliki pintu atau jendela yang tidak perlu — setiap bukaan adalah potensi titik masuk bagi penyusup. Begitu pula sistem: setiap fitur yang tidak diperlukan, setiap file contoh yang tertinggal, setiap akun default yang tidak dihapus adalah "pintu" yang tidak dijaga. Bersih-bersih sebelum sistem digunakan publik adalah langkah keamanan yang sangat penting.
+
+**Bukti dukung:** Tidak ada file default atau sampel yang tertinggal (cek `phpinfo.php`, `/examples`, `/demo`); semua akun default sudah diubah atau dihapus; daftar port yang terbuka menunjukkan hanya yang diperlukan; plugin/modul yang tidak digunakan sudah dinonaktifkan.
+
+**EDK:** Tinjau apakah checklist deployment instansi mencakup penghapusan fitur, dokumentasi, dan konfigurasi default yang tidak diperlukan sebelum go-live.
+
+**EIK:** Lakukan audit: cari file default, sampel, dan akun default. Scan port terbuka. Verifikasi debug tools tidak dapat diakses dari internet. Periksa apakah ada modul/plugin yang tidak digunakan tapi masih aktif.
+
+**EEK:** Indikator: tidak ada file sampel atau akun default yang ditemukan pada pentest, semua port terbuka memiliki justifikasi yang terdokumentasi.
+
+---
+
+### d. Memvalidasi integritas aset jika aset aplikasi diakses secara eksternal
+
+**Penjelasan teknis:** Aset yang diakses dari sumber eksternal harus diverifikasi integritasnya:
+
+- **Sub-resource Integrity (SRI):** Untuk JavaScript dan CSS yang di-load dari CDN, tambahkan atribut `integrity` dan `crossorigin`:
+    
+    ```html
+    <script src="https://cdn.example.com/library.js"        integrity="sha384-[hash]"        crossorigin="anonymous"></script>
+    ```
+    
+    Browser akan menolak menjalankan script jika hash tidak cocok — mencegah CDN compromise atau MITM.
+- **Package integrity verification:** Saat install dependencies, verifikasi checksum (npm menggunakan `integrity` field dalam `package-lock.json`, pip mendukung hash checking).
+- **Container image signing:** Docker image yang di-pull dari registry harus di-sign dan signature-nya diverifikasi (Docker Content Trust, Cosign + Sigstore).
+- **Monitoring external dependencies:** Pantau apakah library/CDN yang digunakan masih aktif dan tidak mengalami compromise.
+
+**Penjelasan awam:** Ketika website menggunakan file JavaScript dari server lain (CDN), ada risiko server tersebut di-hack dan file-nya diganti dengan versi berbahaya. Sub-resource Integrity seperti "sidik jari" dari file yang diharapkan — jika file yang diterima tidak cocok sidik jarinya, browser langsung menolak menjalankannya. Ini memastikan bahwa meskipun server eksternal dikompromikan, website tetap aman.
+
+**Bukti dukung:** Source code review: semua CDN resources memiliki atribut SRI; konfigurasi Docker Content Trust; proses verifikasi checksum dependencies.
+
+**EDK:** Tinjau apakah kebijakan pengembangan instansi mewajibkan penggunaan SRI untuk aset eksternal dan verifikasi integritas dependency.
+
+**EIK:** Review source code HTML: apakah semua script/style dari CDN memiliki atribut integrity? Verifikasi Docker image signing jika menggunakan container.
+
+**EEK:** Indikator: 100% aset dari CDN menggunakan SRI, tidak ada aset eksternal yang di-load tanpa verifikasi integritas.
+
+---
+
+### e. Menggunakan respons aplikasi dan konten yang aman
+
+**Penjelasan teknis:** Security headers yang wajib dikonfigurasi pada semua response aplikasi:
+
+- **Content-Security-Policy (CSP):** Kontrol sumber resource yang diizinkan browser untuk di-load dan dieksekusi. Ini adalah pertahanan utama terhadap XSS.
+    
+    ```
+    Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-[random]'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none';
+    ```
+    
+- **X-Frame-Options: DENY:** Mencegah halaman di-embed dalam iframe (melindungi dari clickjacking attack).
+- **X-Content-Type-Options: nosniff:** Mencegah MIME type sniffing.
+- **Referrer-Policy: no-referrer:** Mengontrol informasi Referer yang dikirim — mencegah kebocoran URL internal.
+- **Permissions-Policy:** Mengontrol akses ke browser API (camera, microphone, geolocation).
+- **Cache-Control:** Untuk halaman yang berisi data sensitif: `Cache-Control: no-store, no-cache, must-revalidate`.
+- **Remove sensitive headers:** Hapus atau minimize `Server`, `X-Powered-By` yang mengekspos informasi teknologi. Tools untuk audit: securityheaders.com, Mozilla Observatory.
+
+**Penjelasan awam:** HTTP headers keamanan seperti instruksi yang diberikan server kepada browser: "jangan izinkan halaman ini dibuka dalam frame website lain" (mencegah clickjacking), "hanya jalankan script dari domain saya sendiri" (mencegah XSS), "jangan simpan halaman ini di cache" (melindungi data sensitif). Instruksi-instruksi ini tidak terlihat oleh pengguna, tapi sangat penting untuk keamanan.
+
+**Risiko jika tidak diterapkan:** Clickjacking attack, XSS melalui injeksi konten, kebocoran informasi sensitif melalui cache atau referrer header.
+
+**Bukti dukung:** Hasil scan headers menggunakan securityheaders.com (target grade A atau A+); review response headers menggunakan browser developer tools; konfigurasi web server yang menambahkan security headers.
+
+**EDK:** Tinjau apakah standar pengembangan instansi mendefinisikan security headers yang wajib dikonfigurasi pada semua aplikasi web.
+
+**EIK:** Scan semua aplikasi menggunakan securityheaders.com atau Mozilla Observatory. Verifikasi setiap security header yang diwajibkan ada dan terkonfigurasi dengan benar. Review konfigurasi web server yang mengatur header tersebut.
+
+**EEK:** Indikator: semua aplikasi mendapat grade A minimal dari securityheaders.com, tidak ada security header kritis yang hilang, tidak ada temuan clickjacking atau header-related vulnerability pada pentest.
