@@ -9,7 +9,7 @@ const person: Person = {
   avatar: "/images/avatar.jpg",
   email: "contact@ircham.dev",
   location: "Asia/Jakarta", // Expecting the IANA time zone identifier, e.g., 'Europe/Vienna'
-  languages: ["English", "Bahasa"], // optional: Leave the array empty if you don't want to display languages
+  languages: ["English", "Bahasa", "Ngoko and Kromo Javanese"], // optional: Leave the array empty if you don't want to display languages
 };
 
 const newsletter: Newsletter = {
@@ -168,14 +168,30 @@ const about: About = {
     title: "Technical skills",
     skills: [
       {
-        title: "Frontend Development",
+        title: "Product Engineering",
         description: (
-            <>Experienced in building responsive and interactive user interfaces using modern web technologies.</>
+            <>I build full products end to end, on the web and natively on Apple platforms, from the database schema to the last pixel. The stack is a tool, not an identity.</>
         ),
         tags: [
           {
+            name: "Next.js",
+            icon: "nextjs",
+          },
+          {
             name: "React",
             icon: "react",
+          },
+          {
+            name: "Swift",
+            icon: "swift",
+          },
+          {
+            name: "Django",
+            icon: "django",
+          },
+          {
+            name: "PostgreSQL",
+            icon: "postgresql",
           },
           {
             name: "Tailwind CSS",
@@ -193,31 +209,30 @@ const about: About = {
         ],
       },
       {
-        title: "Backend Development",
+        title: "AI & Agentic Systems",
         description: (
-            <>Experienced in developing scalable backend services and APIs using frameworks like Django and Next.js, with database management in PostgreSQL.</>
+            <>I integrate AI into the systems you already have. Instead of digging through dashboards and spreadsheets, you just ask in a chat and get insight from your own data. I also build tool-calling agents and MCP servers, and I ship with coding agents every day: I direct them, review what they write, and own the result.</>
         ),
         tags: [
           {
-            name: "Django",
-            icon: "django",
+            name: "Claude",
+            icon: "claude",
           },
           {
-            name: "Next.js",
-            icon: "nextjs",
+            name: "OpenAI",
+            icon: "openai",
           },
           {
-            name: "PostgreSQL",
-            icon: "postgresql",
+            name: "MCP",
           },
         ],
         // optional: leave the array empty if you don't want to display images
         images: [],
       },
       {
-        title: "Infrastructure & DevOps",
+        title: "Self-hosting & Infra",
         description: (
-            <>Experienced in deploying and managing scalable applications using containerization and cloud services.</>
+            <>I run my own homeserver: containerized apps, push-to-deploy, and private networking. If it can be self-hosted, I've probably tried it.</>
         ),
         tags: [
           {
@@ -225,8 +240,38 @@ const about: About = {
             icon: "docker",
           },
           {
+            name: "Tailscale",
+            icon: "tailscale",
+          },
+          {
+            name: "Cloudflare",
+            icon: "cloudflare",
+          },
+          {
             name: "Supabase",
             icon: "supabase",
+          },
+        ],
+        // optional: leave the array empty if you don't want to display images
+        images: [],
+      },
+      {
+        title: "Security by Design",
+        description: (
+            <>I work in the cybersecurity world every day, and it shows in what I build. Security isn't a checklist at the end; it's part of the design from day one: least privilege, safe defaults, and every input treated as hostile. When agents write half the code, that awareness is what keeps it safe.</>
+        ),
+        tags: [
+          {
+            name: "Secure by design",
+            icon: "shield",
+          },
+          {
+            name: "Threat modeling",
+            icon: "bug",
+          },
+          {
+            name: "Least privilege",
+            icon: "lock",
           },
         ],
         // optional: leave the array empty if you don't want to display images
