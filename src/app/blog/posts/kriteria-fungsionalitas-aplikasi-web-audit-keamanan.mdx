@@ -42,11 +42,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Screenshot atau dokumen teknis konfigurasi sistem yang menunjukkan adanya policy enforcement (misal: konfigurasi LDAP, Active Directory password policy, atau konfigurasi aplikasi)
 - Daftar aplikasi SPBE beserta status penerapan manajemen kata sandinya
 
-**EDK:** Tinjau apakah kebijakan SMKI atau kebijakan keamanan informasi instansi secara eksplisit mengatur manajemen kata sandi untuk autentikasi sistem. Cek apakah SOP terkait telah ditetapkan secara formal.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan SMKI atau kebijakan keamanan informasi instansi secara eksplisit mengatur manajemen kata sandi untuk autentikasi sistem. Cek apakah SOP terkait telah ditetapkan secara formal.</EvaluasiCard>
 
-**EIK:** Tinjau apakah sistem/aplikasi yang berjalan benar-benar mengimplementasikan manajemen kata sandi sesuai kebijakan yang ada. Lakukan pengujian: coba buat akun dengan password tanpa aturan — apakah sistem menolak? Cek apakah ada konfigurasi teknis yang aktif.
+<EvaluasiCard type="eik">Tinjau apakah sistem/aplikasi yang berjalan benar-benar mengimplementasikan manajemen kata sandi sesuai kebijakan yang ada. Lakukan pengujian: coba buat akun dengan password tanpa aturan — apakah sistem menolak? Cek apakah ada konfigurasi teknis yang aktif.</EvaluasiCard>
 
-**EEK:** Tinjau apakah manajemen kata sandi yang diterapkan efektif mencegah penggunaan password lemah dan mengurangi risiko akses tidak sah. Indikator: tidak ada insiden akun yang dibobol akibat password lemah, hasil vulnerability scan tidak menemukan weak password policy.
+<EvaluasiCard type="eek">Tinjau apakah manajemen kata sandi yang diterapkan efektif mencegah penggunaan password lemah dan mengurangi risiko akses tidak sah. Indikator: tidak ada insiden akun yang dibobol akibat password lemah, hasil vulnerability scan tidak menemukan weak password policy.</EvaluasiCard>
 
 ---
 
@@ -65,11 +65,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Konfigurasi API Gateway atau WAF yang menunjukkan validasi server-side aktif
 - SOP pengembangan aplikasi yang mewajibkan server-side validation
 
-**EDK:** Tinjau apakah kebijakan/SOP pengembangan aplikasi atau standar keamanan aplikasi instansi mewajibkan validasi autentikasi dilakukan di sisi server.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/SOP pengembangan aplikasi atau standar keamanan aplikasi instansi mewajibkan validasi autentikasi dilakukan di sisi server.</EvaluasiCard>
 
-**EIK:** Uji secara teknis: kirim request login langsung ke endpoint backend (menggunakan Burp Suite atau curl) dengan credential yang salah — apakah server menolak? Pastikan validasi tidak hanya terjadi di JavaScript browser.
+<EvaluasiCard type="eik">Uji secara teknis: kirim request login langsung ke endpoint backend (menggunakan Burp Suite atau curl) dengan credential yang salah — apakah server menolak? Pastikan validasi tidak hanya terjadi di JavaScript browser.</EvaluasiCard>
 
-**EEK:** Tinjau apakah penerapan server-side validation efektif mencegah bypass autentikasi. Indikator: hasil pentest tidak menemukan kemungkinan bypass login melalui manipulasi request langsung ke API.
+<EvaluasiCard type="eek">Tinjau apakah penerapan server-side validation efektif mencegah bypass autentikasi. Indikator: hasil pentest tidak menemukan kemungkinan bypass login melalui manipulasi request langsung ke API.</EvaluasiCard>
 
 ---
 
@@ -93,11 +93,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Demonstrasi langsung: coba buat password yang tidak memenuhi syarat — sistem menolak dan menampilkan pesan error yang sesuai
 - Log atau laporan rotasi password periodik
 
-**EDK:** Tinjau apakah kebijakan/SOP instansi mendefinisikan secara eksplisit: panjang minimum karakter, kombinasi jenis karakter yang diwajibkan, dan masa berlaku kata sandi.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/SOP instansi mendefinisikan secara eksplisit: panjang minimum karakter, kombinasi jenis karakter yang diwajibkan, dan masa berlaku kata sandi.</EvaluasiCard>
 
-**EIK:** Uji secara teknis: coba buat atau ubah password dengan variasi yang tidak memenuhi syarat (terlalu pendek, tanpa angka, tanpa huruf besar). Verifikasi sistem menolak dan menampilkan pesan yang sesuai. Periksa juga apakah ada mekanisme notifikasi expiry password kepada pengguna.
+<EvaluasiCard type="eik">Uji secara teknis: coba buat atau ubah password dengan variasi yang tidak memenuhi syarat (terlalu pendek, tanpa angka, tanpa huruf besar). Verifikasi sistem menolak dan menampilkan pesan yang sesuai. Periksa juga apakah ada mekanisme notifikasi expiry password kepada pengguna.</EvaluasiCard>
 
-**EEK:** Tinjau efektivitas kebijakan dalam mencegah penggunaan password lemah. Indikator: tidak ada temuan password lemah dalam password audit, tidak ada insiden akses tidak sah akibat password mudah ditebak.
+<EvaluasiCard type="eek">Tinjau efektivitas kebijakan dalam mencegah penggunaan password lemah. Indikator: tidak ada temuan password lemah dalam password audit, tidak ada insiden akses tidak sah akibat password mudah ditebak.</EvaluasiCard>
 
 ---
 
@@ -123,11 +123,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Demonstrasi: coba login dengan password salah berulang kali — sistem harus menolak dan mengunci setelah batas tercapai
 - Log sistem yang mencatat percobaan login gagal dan lockout event
 
-**EDK:** Tinjau apakah kebijakan instansi secara eksplisit mendefinisikan jumlah maksimum kesalahan pemasukan kata sandi dan konsekuensinya (lockout/blokir sementara).
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi secara eksplisit mendefinisikan jumlah maksimum kesalahan pemasukan kata sandi dan konsekuensinya (lockout/blokir sementara).</EvaluasiCard>
 
-**EIK:** Uji secara teknis: lakukan percobaan login gagal berulang kali melebihi batas yang ditentukan. Verifikasi sistem mengunci akun sesuai kebijakan. Periksa apakah ada notifikasi ke pemilik akun saat lockout terjadi.
+<EvaluasiCard type="eik">Uji secara teknis: lakukan percobaan login gagal berulang kali melebihi batas yang ditentukan. Verifikasi sistem mengunci akun sesuai kebijakan. Periksa apakah ada notifikasi ke pemilik akun saat lockout terjadi.</EvaluasiCard>
 
-**EEK:** Tinjau apakah mekanisme lockout efektif mencegah brute force attack. Indikator: hasil pentest tidak menemukan kemungkinan brute force tak terbatas, monitoring menunjukkan lockout event terdeteksi dan direspons.
+<EvaluasiCard type="eek">Tinjau apakah mekanisme lockout efektif mencegah brute force attack. Indikator: hasil pentest tidak menemukan kemungkinan brute force tak terbatas, monitoring menunjukkan lockout event terdeteksi dan direspons.</EvaluasiCard>
 
 ---
 
@@ -154,11 +154,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Bukti pengiriman token ke email/HP terdaftar (bukan ditampilkan di layar)
 - Kebijakan yang melarang pengiriman password plaintext
 
-**EDK:** Tinjau apakah instansi memiliki SOP atau prosedur tertulis untuk pemulihan kata sandi yang mencakup mekanisme verifikasi identitas dan keamanan proses reset.
+<EvaluasiCard type="edk">Tinjau apakah instansi memiliki SOP atau prosedur tertulis untuk pemulihan kata sandi yang mencakup mekanisme verifikasi identitas dan keamanan proses reset.</EvaluasiCard>
 
-**EIK:** Uji proses pemulihan password secara langsung: apakah token reset dikirim ke kanal yang tepat? Apakah token kedaluwarsa setelah digunakan? Apakah ada verifikasi identitas yang memadai sebelum reset diizinkan?
+<EvaluasiCard type="eik">Uji proses pemulihan password secara langsung: apakah token reset dikirim ke kanal yang tepat? Apakah token kedaluwarsa setelah digunakan? Apakah ada verifikasi identitas yang memadai sebelum reset diizinkan?</EvaluasiCard>
 
-**EEK:** Tinjau apakah mekanisme pemulihan efektif mencegah pengambilalihan akun (account takeover) melalui eksploitasi proses reset password. Indikator: tidak ada insiden account takeover melalui reset password, hasil pentest tidak menemukan kelemahan pada alur pemulihan.
+<EvaluasiCard type="eek">Tinjau apakah mekanisme pemulihan efektif mencegah pengambilalihan akun (account takeover) melalui eksploitasi proses reset password. Indikator: tidak ada insiden account takeover melalui reset password, hasil pentest tidak menemukan kelemahan pada alur pemulihan.</EvaluasiCard>
 
 ---
 
@@ -185,11 +185,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Kebijakan yang mewajibkan penggunaan kriptografi untuk penyimpanan password
 - Catatan: auditor tidak perlu melihat password asli, cukup verifikasi format hash di database
 
-**EDK:** Tinjau apakah kebijakan atau standar teknis instansi secara eksplisit mewajibkan penyimpanan kata sandi menggunakan mekanisme kriptografi (hashing dengan salt), dan melarang penyimpanan plaintext.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan atau standar teknis instansi secara eksplisit mewajibkan penyimpanan kata sandi menggunakan mekanisme kriptografi (hashing dengan salt), dan melarang penyimpanan plaintext.</EvaluasiCard>
 
-**EIK:** Lakukan pemeriksaan teknis pada database: verifikasi bahwa kolom password berisi nilai hash (bukan plaintext). Verifikasi algoritma hashing yang digunakan termasuk kategori algoritma yang direkomendasikan (bcrypt, Argon2, PBKDF2). Periksa apakah salt digunakan.
+<EvaluasiCard type="eik">Lakukan pemeriksaan teknis pada database: verifikasi bahwa kolom password berisi nilai hash (bukan plaintext). Verifikasi algoritma hashing yang digunakan termasuk kategori algoritma yang direkomendasikan (bcrypt, Argon2, PBKDF2). Periksa apakah salt digunakan.</EvaluasiCard>
 
-**EEK:** Tinjau apakah mekanisme kriptografi yang diterapkan efektif melindungi kerahasiaan password jika terjadi kebocoran database. Indikator: algoritma yang digunakan adalah slow hashing algorithm yang direkomendasikan, work factor sesuai standar terkini, tidak ada password yang disimpan dalam plaintext atau enkripsi reversibel.
+<EvaluasiCard type="eek">Tinjau apakah mekanisme kriptografi yang diterapkan efektif melindungi kerahasiaan password jika terjadi kebocoran database. Indikator: algoritma yang digunakan adalah slow hashing algorithm yang direkomendasikan, work factor sesuai standar terkini, tidak ada password yang disimpan dalam plaintext atau enkripsi reversibel.</EvaluasiCard>
 
 ---
 
@@ -218,11 +218,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Kebijakan yang mewajibkan penggunaan HTTPS untuk seluruh aplikasi SPBE
 - Catatan: cek juga apakah ada endpoint yang masih bisa diakses via HTTP tanpa redirect
 
-**EDK:** Tinjau apakah kebijakan instansi mewajibkan penggunaan jalur komunikasi terenkripsi (HTTPS/TLS) untuk seluruh aplikasi SPBE, terutama untuk proses autentikasi.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mewajibkan penggunaan jalur komunikasi terenkripsi (HTTPS/TLS) untuk seluruh aplikasi SPBE, terutama untuk proses autentikasi.</EvaluasiCard>
 
-**EIK:** Lakukan verifikasi teknis: akses aplikasi via HTTP — apakah otomatis di-redirect ke HTTPS? Periksa sertifikat SSL: apakah valid dan tidak kedaluwarsa? Gunakan SSL Labs untuk memeriksa konfigurasi TLS. Periksa response header HSTS.
+<EvaluasiCard type="eik">Lakukan verifikasi teknis: akses aplikasi via HTTP — apakah otomatis di-redirect ke HTTPS? Periksa sertifikat SSL: apakah valid dan tidak kedaluwarsa? Gunakan SSL Labs untuk memeriksa konfigurasi TLS. Periksa response header HSTS.</EvaluasiCard>
 
-**EEK:** Tinjau apakah penggunaan HTTPS efektif mencegah penyadapan credential saat transmisi. Indikator: hasil scan SSL Labs minimal grade A, TLS 1.2+ digunakan, HSTS aktif, tidak ada endpoint autentikasi yang dapat diakses via HTTP tanpa redirect, tidak ada sertifikat kedaluwarsa.
+<EvaluasiCard type="eek">Tinjau apakah penggunaan HTTPS efektif mencegah penyadapan credential saat transmisi. Indikator: hasil scan SSL Labs minimal grade A, TLS 1.2+ digunakan, HSTS aktif, tidak ada endpoint autentikasi yang dapat diakses via HTTP tanpa redirect, tidak ada sertifikat kedaluwarsa.</EvaluasiCard>
 
 ---
 
@@ -250,11 +250,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Source code review atau konfigurasi framework yang menunjukkan session manager aktif digunakan (misal: Express-session, Django sessions, Spring Session)
 - Daftar aplikasi SPBE beserta mekanisme session management yang digunakan
 
-**EDK:** Tinjau apakah kebijakan pengembangan aplikasi instansi mewajibkan penggunaan pengendali sesi (session manager) yang terstandar untuk semua aplikasi SPBE.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan pengembangan aplikasi instansi mewajibkan penggunaan pengendali sesi (session manager) yang terstandar untuk semua aplikasi SPBE.</EvaluasiCard>
 
-**EIK:** Verifikasi secara teknis bahwa aplikasi menggunakan session manager dari framework atau library yang diakui (bukan implementasi custom). Periksa konfigurasi session manager yang aktif.
+<EvaluasiCard type="eik">Verifikasi secara teknis bahwa aplikasi menggunakan session manager dari framework atau library yang diakui (bukan implementasi custom). Periksa konfigurasi session manager yang aktif.</EvaluasiCard>
 
-**EEK:** Tinjau apakah penggunaan session manager yang terstandar efektif mencegah kelemahan manajemen sesi. Indikator: hasil pentest tidak menemukan kelemahan session management fundamental, sesi dapat dibuat, divalidasi, dan dihapus dengan benar.
+<EvaluasiCard type="eek">Tinjau apakah penggunaan session manager yang terstandar efektif mencegah kelemahan manajemen sesi. Indikator: hasil pentest tidak menemukan kelemahan session management fundamental, sesi dapat dibuat, divalidasi, dan dihapus dengan benar.</EvaluasiCard>
 
 ---
 
@@ -279,11 +279,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Source code review: tidak ada implementasi custom session dari nol
 - Catatan: verifikasi bahwa versi framework yang digunakan masih dalam status "supported" dan tidak ada known vulnerability pada modul session-nya
 
-**EDK:** Tinjau apakah kebijakan/standar pengembangan aplikasi instansi secara eksplisit mensyaratkan penggunaan session manager bawaan framework, bukan implementasi custom.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/standar pengembangan aplikasi instansi secara eksplisit mensyaratkan penggunaan session manager bawaan framework, bukan implementasi custom.</EvaluasiCard>
 
-**EIK:** Lakukan source code review atau dokumentasi review untuk memverifikasi bahwa session manager yang digunakan adalah bawaan framework (bukan custom). Identifikasi framework dan versi yang digunakan.
+<EvaluasiCard type="eik">Lakukan source code review atau dokumentasi review untuk memverifikasi bahwa session manager yang digunakan adalah bawaan framework (bukan custom). Identifikasi framework dan versi yang digunakan.</EvaluasiCard>
 
-**EEK:** Tinjau apakah penggunaan framework session manager efektif. Indikator: tidak ada temuan kelemahan session pada pentest yang disebabkan oleh implementasi session management yang buruk, framework yang digunakan masih actively maintained.
+<EvaluasiCard type="eek">Tinjau apakah penggunaan framework session manager efektif. Indikator: tidak ada temuan kelemahan session pada pentest yang disebabkan oleh implementasi session management yang buruk, framework yang digunakan masih actively maintained.</EvaluasiCard>
 
 ---
 
@@ -308,11 +308,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Sampel token sesi yang dihasilkan: cek panjang dan apakah terlihat benar-benar acak (bukan sequential/predictable)
 - Hasil analisis entropi token menggunakan tools seperti Burp Suite (Sequencer) untuk mengukur keacakan token
 
-**EDK:** Tinjau apakah kebijakan/standar teknis instansi mendefinisikan persyaratan keacakan dan panjang minimum token sesi.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/standar teknis instansi mendefinisikan persyaratan keacakan dan panjang minimum token sesi.</EvaluasiCard>
 
-**EIK:** Analisis token sesi yang dihasilkan sistem menggunakan Burp Suite Sequencer atau tools serupa. Verifikasi panjang token minimal 128-bit dan dibuat menggunakan CSPRNG. Cek apakah ada pola atau urutan yang dapat diprediksi.
+<EvaluasiCard type="eik">Analisis token sesi yang dihasilkan sistem menggunakan Burp Suite Sequencer atau tools serupa. Verifikasi panjang token minimal 128-bit dan dibuat menggunakan CSPRNG. Cek apakah ada pola atau urutan yang dapat diprediksi.</EvaluasiCard>
 
-**EEK:** Tinjau apakah token yang dihasilkan memiliki entropi yang cukup untuk mencegah session prediction attack. Indikator: hasil analisis Burp Sequencer menunjukkan entropi tinggi, tidak ada temuan session prediction vulnerability pada pentest.
+<EvaluasiCard type="eek">Tinjau apakah token yang dihasilkan memiliki entropi yang cukup untuk mencegah session prediction attack. Indikator: hasil analisis Burp Sequencer menunjukkan entropi tinggi, tidak ada temuan session prediction vulnerability pada pentest.</EvaluasiCard>
 
 ---
 
@@ -337,11 +337,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Demonstrasi: biarkan sesi idle melebihi batas — sistem harus otomatis logout
 - Cek apakah logout eksplisit benar-benar menginvalidasi token sesi di server (bukan hanya menghapus cookie di client)
 
-**EDK:** Tinjau apakah kebijakan instansi mendefinisikan jangka waktu habis sesi (idle timeout dan absolute timeout) serta kondisi-kondisi yang memaksa terminasi sesi.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mendefinisikan jangka waktu habis sesi (idle timeout dan absolute timeout) serta kondisi-kondisi yang memaksa terminasi sesi.</EvaluasiCard>
 
-**EIK:** Uji secara teknis: biarkan sesi idle melebihi batas yang ditentukan, lalu coba gunakan — apakah sistem menolak dan meminta login ulang? Verifikasi bahwa logout menginvalidasi token di sisi server.
+<EvaluasiCard type="eik">Uji secara teknis: biarkan sesi idle melebihi batas yang ditentukan, lalu coba gunakan — apakah sistem menolak dan meminta login ulang? Verifikasi bahwa logout menginvalidasi token di sisi server.</EvaluasiCard>
 
-**EEK:** Tinjau apakah timeout sesi efektif meminimalkan risiko session hijacking. Indikator: tidak ada sesi yang bisa digunakan setelah melewati batas timeout, token yang sudah logout tidak bisa digunakan kembali (replay test), tidak ada insiden akibat sesi yang tidak berakhir.
+<EvaluasiCard type="eek">Tinjau apakah timeout sesi efektif meminimalkan risiko session hijacking. Indikator: tidak ada sesi yang bisa digunakan setelah melewati batas timeout, token yang sudah logout tidak bisa digunakan kembali (replay test), tidak ada insiden akibat sesi yang tidak berakhir.</EvaluasiCard>
 
 ---
 
@@ -370,11 +370,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Pengujian akses langsung ke endpoint tanpa session ID atau dengan session ID yang tidak valid — sistem harus menolak (401/403)
 - Pengujian apakah session ID pernah muncul di URL (cek access log server)
 
-**EDK:** Tinjau apakah kebijakan/standar teknis instansi mengatur cara pencantuman dan validasi session ID, termasuk larangan penggunaan session ID di URL.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/standar teknis instansi mengatur cara pencantuman dan validasi session ID, termasuk larangan penggunaan session ID di URL.</EvaluasiCard>
 
-**EIK:** Verifikasi secara teknis: periksa di mana session ID dikirimkan (harus di cookie, bukan URL). Periksa atribut cookie (`HttpOnly`, `Secure`, `SameSite`). Coba akses endpoint tanpa session ID yang valid — sistem harus menolak.
+<EvaluasiCard type="eik">Verifikasi secara teknis: periksa di mana session ID dikirimkan (harus di cookie, bukan URL). Periksa atribut cookie (`HttpOnly`, `Secure`, `SameSite`). Coba akses endpoint tanpa session ID yang valid — sistem harus menolak.</EvaluasiCard>
 
-**EEK:** Tinjau apakah validasi dan pencantuman session ID efektif mencegah session hijacking dan unauthorized access. Indikator: session ID tidak pernah muncul di URL, cookie memiliki atribut proteksi yang lengkap, semua endpoint terproteksi secara konsisten.
+<EvaluasiCard type="eek">Tinjau apakah validasi dan pencantuman session ID efektif mencegah session hijacking dan unauthorized access. Indikator: session ID tidak pernah muncul di URL, cookie memiliki atribut proteksi yang lengkap, semua endpoint terproteksi secara konsisten.</EvaluasiCard>
 
 ---
 
@@ -404,11 +404,11 @@ Berikut adalah penjelasan dan bukti dukung yang bisa digunakan untuk setiap pros
 - Verifikasi bahwa API endpoint menerima token via Authorization header, bukan URL parameter
 - Pentest untuk XSS: jika ada XSS vulnerability, apakah token dapat dicuri? (Cookie HttpOnly seharusnya mencegah ini)
 
-**EDK:** Tinjau apakah kebijakan/standar teknis instansi mengatur lokasi penyimpanan token sesi di client dan mekanisme pengirimannya yang aman.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/standar teknis instansi mengatur lokasi penyimpanan token sesi di client dan mekanisme pengirimannya yang aman.</EvaluasiCard>
 
-**EIK:** Verifikasi secara teknis lokasi penyimpanan token (harus di HttpOnly cookie, bukan localStorage). Periksa response header autentikasi untuk Cache-Control. Verifikasi token tidak dikirim via URL parameter.
+<EvaluasiCard type="eik">Verifikasi secara teknis lokasi penyimpanan token (harus di HttpOnly cookie, bukan localStorage). Periksa response header autentikasi untuk Cache-Control. Verifikasi token tidak dikirim via URL parameter.</EvaluasiCard>
 
-**EEK:** Tinjau apakah perlindungan token efektif mencegah pencurian token sesi. Indikator: token tidak dapat diakses via JavaScript (HttpOnly), tidak tersimpan di cache, tidak bocor ke URL, hasil pentest XSS tidak berhasil mencuri token sesi.
+<EvaluasiCard type="eek">Tinjau apakah perlindungan token efektif mencegah pencurian token sesi. Indikator: token tidak dapat diakses via JavaScript (HttpOnly), tidak tersimpan di cache, tidak bocor ke URL, hasil pentest XSS tidak berhasil mencuri token sesi.</EvaluasiCard>
 
 ---
 
@@ -452,11 +452,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 - Pengujian CSRF: coba kirim request state-changing (POST/PUT/DELETE) tanpa CSRF token — sistem harus menolak (403 Forbidden)
 - Pengujian concurrent session: login dari dua device/browser berbeda — apakah ada notifikasi atau pembatasan?
 
-**EDK:** Tinjau apakah kebijakan/standar teknis instansi mengatur perlindungan terhadap session fixation, concurrent session, dan serangan CSRF. Pastikan ada ketentuan yang mewajibkan session regeneration saat login dan implementasi CSRF protection.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/standar teknis instansi mengatur perlindungan terhadap session fixation, concurrent session, dan serangan CSRF. Pastikan ada ketentuan yang mewajibkan session regeneration saat login dan implementasi CSRF protection.</EvaluasiCard>
 
-**EIK:** Verifikasi secara teknis: (1) cek apakah session ID berubah sebelum dan sesudah login berhasil (session regeneration); (2) verifikasi CSRF token ada di setiap form yang melakukan aksi penting; (3) coba submit form tanpa CSRF token — sistem harus menolak; (4) periksa atribut `SameSite` pada cookie.
+<EvaluasiCard type="eik">Verifikasi secara teknis: (1) cek apakah session ID berubah sebelum dan sesudah login berhasil (session regeneration); (2) verifikasi CSRF token ada di setiap form yang melakukan aksi penting; (3) coba submit form tanpa CSRF token — sistem harus menolak; (4) periksa atribut `SameSite` pada cookie.</EvaluasiCard>
 
-**EEK:** Tinjau apakah perlindungan duplikasi dan mekanisme persetujuan efektif mencegah session fixation dan CSRF attack. Indikator: session ID selalu baru setelah login, semua form dilindungi CSRF token, request tanpa CSRF token ditolak, tidak ada temuan CSRF vulnerability pada pentest.
+<EvaluasiCard type="eek">Tinjau apakah perlindungan duplikasi dan mekanisme persetujuan efektif mencegah session fixation dan CSRF attack. Indikator: session ID selalu baru setelah login, semua form dilindungi CSRF token, request tanpa CSRF token ditolak, tidak ada temuan CSRF vulnerability pada pentest.</EvaluasiCard>
 
 ## 3. Persyaratan Kontrol Akses
 
@@ -485,11 +485,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 - Demonstrasi: login sebagai user biasa, coba akses URL/endpoint yang seharusnya hanya bisa diakses admin — sistem harus menolak (403 Forbidden)
 - Source code review: verifikasi setiap endpoint memiliki pengecekan otorisasi
 
-**EDK:** Tinjau apakah instansi memiliki kebijakan yang mendefinisikan matriks otorisasi (siapa boleh akses apa) untuk setiap aplikasi SPBE, termasuk prinsip least privilege.
+<EvaluasiCard type="edk">Tinjau apakah instansi memiliki kebijakan yang mendefinisikan matriks otorisasi (siapa boleh akses apa) untuk setiap aplikasi SPBE, termasuk prinsip least privilege.</EvaluasiCard>
 
-**EIK:** Uji secara teknis: coba akses resource/endpoint yang tidak sesuai role pengguna yang sedang login — sistem harus menolak. Verifikasi pengecekan otorisasi ada di sisi server, bukan hanya disembunyikan di UI.
+<EvaluasiCard type="eik">Uji secara teknis: coba akses resource/endpoint yang tidak sesuai role pengguna yang sedang login — sistem harus menolak. Verifikasi pengecekan otorisasi ada di sisi server, bukan hanya disembunyikan di UI.</EvaluasiCard>
 
-**EEK:** Tinjau apakah kontrol otorisasi efektif mencegah akses tidak sah. Indikator: tidak ada temuan Broken Access Control atau IDOR pada pentest, tidak ada insiden akses data oleh pihak yang tidak berhak.
+<EvaluasiCard type="eek">Tinjau apakah kontrol otorisasi efektif mencegah akses tidak sah. Indikator: tidak ada temuan Broken Access Control atau IDOR pada pentest, tidak ada insiden akses data oleh pihak yang tidak berhak.</EvaluasiCard>
 
 ---
 
@@ -514,11 +514,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 - Konfigurasi alerting: bukti ada notifikasi ke tim saat terjadi anomali
 - SOP respons insiden untuk serangan otomatis
 
-**EDK:** Tinjau apakah kebijakan/SOP instansi mengatur mekanisme deteksi dan respons terhadap akses otomatis yang berlebihan atau tidak wajar pada fungsi aplikasi.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/SOP instansi mengatur mekanisme deteksi dan respons terhadap akses otomatis yang berlebihan atau tidak wajar pada fungsi aplikasi.</EvaluasiCard>
 
-**EIK:** Uji rate limiting: kirim request melebihi batas yang ditentukan — sistem harus menolak dengan 429 Too Many Requests. Verifikasi ada logging dan alerting saat threshold terlampaui.
+<EvaluasiCard type="eik">Uji rate limiting: kirim request melebihi batas yang ditentukan — sistem harus menolak dengan 429 Too Many Requests. Verifikasi ada logging dan alerting saat threshold terlampaui.</EvaluasiCard>
 
-**EEK:** Tinjau apakah mekanisme rate limiting dan alerting efektif mencegah serangan otomatis. Indikator: serangan brute force/scraping terdeteksi dan diblokir otomatis, tim keamanan menerima alert tepat waktu.
+<EvaluasiCard type="eek">Tinjau apakah mekanisme rate limiting dan alerting efektif mencegah serangan otomatis. Indikator: serangan brute force/scraping terdeteksi dan diblokir otomatis, tim keamanan menerima alert tepat waktu.</EvaluasiCard>
 
 ---
 
@@ -545,11 +545,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 - Log audit admin panel yang lengkap
 - Verifikasi: coba akses admin URL dari IP yang tidak diizinkan — harus ditolak
 
-**EDK:** Tinjau apakah kebijakan instansi mengatur secara eksplisit pembatasan akses ke antarmuka administrator, termasuk persyaratan autentikasi yang lebih ketat dan audit logging.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mengatur secara eksplisit pembatasan akses ke antarmuka administrator, termasuk persyaratan autentikasi yang lebih ketat dan audit logging.</EvaluasiCard>
 
-**EIK:** Verifikasi teknis: apakah admin panel hanya dapat diakses dari jaringan/IP yang diizinkan? Apakah MFA aktif untuk admin? Apakah setiap aksi admin tercatat di log audit?
+<EvaluasiCard type="eik">Verifikasi teknis: apakah admin panel hanya dapat diakses dari jaringan/IP yang diizinkan? Apakah MFA aktif untuk admin? Apakah setiap aksi admin tercatat di log audit?</EvaluasiCard>
 
-**EEK:** Tinjau apakah pengamanan admin panel efektif mencegah akses tidak sah dan penyalahgunaan. Indikator: admin panel tidak dapat diakses dari internet publik tanpa VPN, semua aksi admin ter-log, tidak ada akun admin tanpa MFA.
+<EvaluasiCard type="eek">Tinjau apakah pengamanan admin panel efektif mencegah akses tidak sah dan penyalahgunaan. Indikator: admin panel tidak dapat diakses dari internet publik tanpa VPN, semua aksi admin ter-log, tidak ada akun admin tanpa MFA.</EvaluasiCard>
 
 ---
 
@@ -573,11 +573,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 - Pengujian IDOR: ubah ID di URL/parameter — apakah bisa mengakses data milik user lain?
 - Kebijakan yang mewajibkan verifikasi token pada akses data sensitif
 
-**EDK:** Tinjau apakah kebijakan instansi mendefinisikan klasifikasi data sensitif/dikecualikan dan mewajibkan verifikasi otorisasi khusus untuk mengaksesnya.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mendefinisikan klasifikasi data sensitif/dikecualikan dan mewajibkan verifikasi otorisasi khusus untuk mengaksesnya.</EvaluasiCard>
 
-**EIK:** Uji akses ke data sensitif: login sebagai user A, coba akses data milik user B dengan memanipulasi ID di request — sistem harus menolak. Verifikasi object-level authorization ada di server.
+<EvaluasiCard type="eik">Uji akses ke data sensitif: login sebagai user A, coba akses data milik user B dengan memanipulasi ID di request — sistem harus menolak. Verifikasi object-level authorization ada di server.</EvaluasiCard>
 
-**EEK:** Tinjau apakah verifikasi token efektif mencegah akses tidak sah ke data sensitif. Indikator: tidak ada temuan IDOR pada pentest, tidak ada insiden kebocoran data sensitif akibat kelemahan otorisasi.
+<EvaluasiCard type="eek">Tinjau apakah verifikasi token efektif mencegah akses tidak sah ke data sensitif. Indikator: tidak ada temuan IDOR pada pentest, tidak ada insiden kebocoran data sensitif akibat kelemahan otorisasi.</EvaluasiCard>
 
 ---
 
@@ -599,11 +599,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review menunjukkan validasi input di backend; pengujian: kirim input invalid langsung via Burp Suite — server harus menolak.
 
-**EDK:** Tinjau apakah standar pengembangan aplikasi instansi mewajibkan validasi input di sisi server untuk semua parameter.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan aplikasi instansi mewajibkan validasi input di sisi server untuk semua parameter.</EvaluasiCard>
 
-**EIK:** Kirim request dengan input tidak valid langsung ke endpoint API (bypass form browser) — server harus menolak dengan pesan error yang tepat.
+<EvaluasiCard type="eik">Kirim request dengan input tidak valid langsung ke endpoint API (bypass form browser) — server harus menolak dengan pesan error yang tepat.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada temuan injection vulnerability pada pentest akibat missing server-side validation.
+<EvaluasiCard type="eek">Indikator: tidak ada temuan injection vulnerability pada pentest akibat missing server-side validation.</EvaluasiCard>
 
 ---
 
@@ -617,11 +617,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Pengujian input invalid: apakah sistem mengembalikan 400 dengan pesan jelas? Apakah tidak ada stack trace yang terekspos? Log server menunjukkan pencatatan input invalid.
 
-**EDK:** Tinjau apakah SOP/standar pengembangan mengatur mekanisme penolakan input yang jelas dan aman (tidak mengekspos informasi teknis internal).
+<EvaluasiCard type="edk">Tinjau apakah SOP/standar pengembangan mengatur mekanisme penolakan input yang jelas dan aman (tidak mengekspos informasi teknis internal).</EvaluasiCard>
 
-**EIK:** Uji berbagai skenario input invalid — verifikasi sistem menolak dengan status code dan pesan yang tepat, tanpa mengekspos informasi sensitif.
+<EvaluasiCard type="eik">Uji berbagai skenario input invalid — verifikasi sistem menolak dengan status code dan pesan yang tepat, tanpa mengekspos informasi sensitif.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada informasi teknis internal yang terekspos saat validasi gagal, semua input invalid ter-log dengan benar.
+<EvaluasiCard type="eek">Indikator: tidak ada informasi teknis internal yang terekspos saat validasi gagal, semua input invalid ter-log dengan benar.</EvaluasiCard>
 
 ---
 
@@ -639,11 +639,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Hasil dependency vulnerability scan (npm audit, OWASP Dependency-Check); daftar komponen dan versi yang digunakan; bukti proses patch management (change log update); SOP patch management.
 
-**EDK:** Tinjau apakah kebijakan instansi mengatur patch management dan update berkala untuk runtime environment dan dependencies aplikasi.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mengatur patch management dan update berkala untuk runtime environment dan dependencies aplikasi.</EvaluasiCard>
 
-**EIK:** Lakukan dependency scan pada aplikasi — apakah ada library dengan known critical/high vulnerability? Verifikasi proses update yang berjalan.
+<EvaluasiCard type="eik">Lakukan dependency scan pada aplikasi — apakah ada library dengan known critical/high vulnerability? Verifikasi proses update yang berjalan.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada library dengan known critical vulnerability yang belum di-patch, proses dependency scanning berjalan secara rutin.
+<EvaluasiCard type="eek">Indikator: tidak ada library dengan known critical vulnerability yang belum di-patch, proses dependency scanning berjalan secara rutin.</EvaluasiCard>
 
 ---
 
@@ -662,11 +662,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: apakah validasi menggunakan allowlist (regex spesifik, schema yang ketat)? Pengujian: coba input dengan karakter di luar allowlist — sistem harus menolak.
 
-**EDK:** Tinjau apakah standar pengembangan aplikasi instansi mewajibkan penggunaan validasi positif (allowlist) untuk semua input pengguna.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan aplikasi instansi mewajibkan penggunaan validasi positif (allowlist) untuk semua input pengguna.</EvaluasiCard>
 
-**EIK:** Review schema validasi input: apakah menggunakan pendekatan allowlist atau blacklist? Uji dengan input yang mengandung karakter di luar spesifikasi — harus ditolak.
+<EvaluasiCard type="eik">Review schema validasi input: apakah menggunakan pendekatan allowlist atau blacklist? Uji dengan input yang mengandung karakter di luar spesifikasi — harus ditolak.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada temuan injection attack yang berhasil karena validasi input yang lemah pada pentest.
+<EvaluasiCard type="eek">Indikator: tidak ada temuan injection attack yang berhasil karena validasi input yang lemah pada pentest.</EvaluasiCard>
 
 ---
 
@@ -685,11 +685,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: penggunaan parameterized query, output encoding library; hasil DAST (Dynamic Application Security Testing); pentest: apakah XSS atau SQL injection berhasil?
 
-**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan filtering dan encoding data tidak dipercaya sebelum diproses atau ditampilkan.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan instansi mewajibkan filtering dan encoding data tidak dipercaya sebelum diproses atau ditampilkan.</EvaluasiCard>
 
-**EIK:** Uji XSS: masukkan `<script>alert(1)</script>` ke input — apakah ter-render sebagai kode atau ditampilkan sebagai teks biasa? Uji SQL injection: masukkan `' OR '1'='1` ke input — apakah query berhasil dimanipulasi?
+<EvaluasiCard type="eik">Uji XSS: masukkan `<script>alert(1)</script>` ke input — apakah ter-render sebagai kode atau ditampilkan sebagai teks biasa? Uji SQL injection: masukkan `' OR '1'='1` ke input — apakah query berhasil dimanipulasi?</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada temuan XSS atau SQL injection pada pentest, output encoding konsisten diterapkan di seluruh aplikasi.
+<EvaluasiCard type="eek">Indikator: tidak ada temuan XSS atau SQL injection pada pentest, output encoding konsisten diterapkan di seluruh aplikasi.</EvaluasiCard>
 
 ---
 
@@ -708,11 +708,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: apakah ada penggunaan `eval()` atau fungsi serupa? Jika ada, apakah inputnya bukan dari user? Static code analysis report (SonarQube, Semgrep).
 
-**EDK:** Tinjau apakah kebijakan pengembangan instansi melarang atau membatasi penggunaan dynamic code execution, terutama dengan input dari pengguna.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan pengembangan instansi melarang atau membatasi penggunaan dynamic code execution, terutama dengan input dari pengguna.</EvaluasiCard>
 
-**EIK:** Lakukan static code analysis untuk mendeteksi penggunaan fungsi dynamic code execution. Verifikasi tidak ada input pengguna yang mengalir ke fungsi tersebut.
+<EvaluasiCard type="eik">Lakukan static code analysis untuk mendeteksi penggunaan fungsi dynamic code execution. Verifikasi tidak ada input pengguna yang mengalir ke fungsi tersebut.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ditemukan penggunaan dynamic code execution yang berbahaya dalam code review dan pentest.
+<EvaluasiCard type="eek">Indikator: tidak ditemukan penggunaan dynamic code execution yang berbahaya dalam code review dan pentest.</EvaluasiCard>
 
 ---
 
@@ -731,11 +731,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Periksa response header menggunakan browser developer tools atau curl: apakah ada CSP, X-XSS-Protection, X-Content-Type-Options? Pengujian XSS pada semua input field. Laporan security header dari tools seperti securityheaders.com.
 
-**EDK:** Tinjau apakah kebijakan/standar teknis instansi mewajibkan implementasi proteksi XSS (CSP header, output encoding) pada semua aplikasi web.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/standar teknis instansi mewajibkan implementasi proteksi XSS (CSP header, output encoding) pada semua aplikasi web.</EvaluasiCard>
 
-**EIK:** Periksa security headers pada response aplikasi. Uji XSS pada setiap input field. Verifikasi CSP aktif dan terkonfigurasi dengan benar.
+<EvaluasiCard type="eik">Periksa security headers pada response aplikasi. Uji XSS pada setiap input field. Verifikasi CSP aktif dan terkonfigurasi dengan benar.</EvaluasiCard>
 
-**EEK:** Indikator: CSP terkonfigurasi dengan ketat, tidak ada temuan XSS pada pentest, security header assessment menunjukkan grade baik.
+<EvaluasiCard type="eek">Indikator: CSP terkonfigurasi dengan ketat, tidak ada temuan XSS pada pentest, security header assessment menunjukkan grade baik.</EvaluasiCard>
 
 ---
 
@@ -760,11 +760,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: semua query menggunakan parameterized query atau ORM; pengujian SQL injection (manual atau SQLMAP); tidak ada pesan error database yang terekspos ke user.
 
-**EDK:** Tinjau apakah standar pengembangan instansi secara eksplisit melarang penggunaan string concatenation dalam query SQL dan mewajibkan parameterized query.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan instansi secara eksplisit melarang penggunaan string concatenation dalam query SQL dan mewajibkan parameterized query.</EvaluasiCard>
 
-**EIK:** Lakukan SQL injection testing pada semua input field yang berinteraksi dengan database. Review source code untuk memastikan tidak ada dynamic query construction dari input user.
+<EvaluasiCard type="eik">Lakukan SQL injection testing pada semua input field yang berinteraksi dengan database. Review source code untuk memastikan tidak ada dynamic query construction dari input user.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada temuan SQL injection pada pentest, source code review tidak menemukan raw string concatenation di query SQL.
+<EvaluasiCard type="eek">Indikator: tidak ada temuan SQL injection pada pentest, source code review tidak menemukan raw string concatenation di query SQL.</EvaluasiCard>
 
 ---
 
@@ -793,11 +793,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Dokumentasi teknis yang menyebutkan algoritma kriptografi yang digunakan; konfigurasi TLS (SSL Labs scan); source code review modul kriptografi; kebijakan yang mengacu pada standar yang berlaku.
 
-**EDK:** Tinjau apakah kebijakan keamanan informasi instansi menetapkan standar algoritma kriptografi yang boleh dan tidak boleh digunakan, mengacu pada regulasi yang berlaku.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan keamanan informasi instansi menetapkan standar algoritma kriptografi yang boleh dan tidak boleh digunakan, mengacu pada regulasi yang berlaku.</EvaluasiCard>
 
-**EIK:** Verifikasi algoritma yang aktif digunakan: scan TLS konfigurasi, review source code modul enkripsi, pastikan tidak ada penggunaan algoritma deprecated.
+<EvaluasiCard type="eik">Verifikasi algoritma yang aktif digunakan: scan TLS konfigurasi, review source code modul enkripsi, pastikan tidak ada penggunaan algoritma deprecated.</EvaluasiCard>
 
-**EEK:** Indikator: SSL Labs grade A+, tidak ada algoritma deprecated yang digunakan, semua kunci memenuhi panjang minimum yang disyaratkan.
+<EvaluasiCard type="eek">Indikator: SSL Labs grade A+, tidak ada algoritma deprecated yang digunakan, semua kunci memenuhi panjang minimum yang disyaratkan.</EvaluasiCard>
 
 ---
 
@@ -816,11 +816,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: apakah mode enkripsi yang digunakan adalah AEAD (AES-GCM)? Verifikasi authentication tag selalu diverifikasi saat dekripsi.
 
-**EDK:** Tinjau apakah standar kriptografi instansi mewajibkan penggunaan authenticated encryption (bukan enkripsi saja) untuk data sensitif.
+<EvaluasiCard type="edk">Tinjau apakah standar kriptografi instansi mewajibkan penggunaan authenticated encryption (bukan enkripsi saja) untuk data sensitif.</EvaluasiCard>
 
-**EIK:** Review implementasi enkripsi: apakah menggunakan mode AEAD atau Encrypt-then-MAC? Apakah authentication tag diverifikasi saat dekripsi?
+<EvaluasiCard type="eik">Review implementasi enkripsi: apakah menggunakan mode AEAD atau Encrypt-then-MAC? Apakah authentication tag diverifikasi saat dekripsi?</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada penggunaan unauthenticated encryption (misal: AES-ECB atau AES-CBC tanpa MAC) untuk data sensitif.
+<EvaluasiCard type="eek">Indikator: tidak ada penggunaan unauthenticated encryption (misal: AES-ECB atau AES-CBC tanpa MAC) untuk data sensitif.</EvaluasiCard>
 
 ---
 
@@ -841,11 +841,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Tidak ada kunci kriptografi di source code (cek dengan `git grep` atau secret scanning tools); konfigurasi secrets manager; SOP manajemen siklus hidup kunci; bukti rotasi kunci berkala.
 
-**EDK:** Tinjau apakah instansi memiliki kebijakan manajemen kunci kriptografi yang mencakup pembuatan, penyimpanan, distribusi, rotasi, dan pemusnahan kunci.
+<EvaluasiCard type="edk">Tinjau apakah instansi memiliki kebijakan manajemen kunci kriptografi yang mencakup pembuatan, penyimpanan, distribusi, rotasi, dan pemusnahan kunci.</EvaluasiCard>
 
-**EIK:** Scan source code untuk hardcoded secrets (API key, kunci enkripsi). Verifikasi penggunaan secrets manager. Periksa prosedur rotasi kunci.
+<EvaluasiCard type="eik">Scan source code untuk hardcoded secrets (API key, kunci enkripsi). Verifikasi penggunaan secrets manager. Periksa prosedur rotasi kunci.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ditemukan hardcoded key di source code, kunci dirotasi sesuai jadwal, akses ke kunci ter-audit.
+<EvaluasiCard type="eek">Indikator: tidak ditemukan hardcoded key di source code, kunci dirotasi sesuai jadwal, akses ke kunci ter-audit.</EvaluasiCard>
 
 ---
 
@@ -864,11 +864,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: identifikasi penggunaan random number generator di bagian kritis (token generation, salt generation, key generation) — verifikasi menggunakan CSPRNG.
 
-**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan penggunaan CSPRNG untuk semua nilai yang berkaitan dengan keamanan.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan instansi mewajibkan penggunaan CSPRNG untuk semua nilai yang berkaitan dengan keamanan.</EvaluasiCard>
 
-**EIK:** Source code review pada semua lokasi pembuatan token, salt, kunci, dan OTP — verifikasi penggunaan CSPRNG, bukan fungsi random biasa.
+<EvaluasiCard type="eik">Source code review pada semua lokasi pembuatan token, salt, kunci, dan OTP — verifikasi penggunaan CSPRNG, bukan fungsi random biasa.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ditemukan penggunaan fungsi random non-kriptografis untuk keperluan keamanan dalam code review.
+<EvaluasiCard type="eek">Indikator: tidak ditemukan penggunaan fungsi random non-kriptografis untuk keperluan keamanan dalam code review.</EvaluasiCard>
 
 ---
 
@@ -896,11 +896,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Demonstrasi: trigger error (URL tidak valid, input yang menyebabkan exception) — apakah pesan error yang tampil ke user bersih dari informasi teknis? Verifikasi debug mode dimatikan di production; custom error page aktif.
 
-**EDK:** Tinjau apakah kebijakan/standar pengembangan instansi mengatur bahwa pesan error yang ditampilkan ke pengguna tidak boleh mengandung informasi teknis internal.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan/standar pengembangan instansi mengatur bahwa pesan error yang ditampilkan ke pengguna tidak boleh mengandung informasi teknis internal.</EvaluasiCard>
 
-**EIK:** Trigger berbagai skenario error — verifikasi pesan yang ditampilkan ke user tidak mengandung stack trace, nama file, atau informasi teknis lainnya. Verifikasi debug mode dimatikan.
+<EvaluasiCard type="eik">Trigger berbagai skenario error — verifikasi pesan yang ditampilkan ke user tidak mengandung stack trace, nama file, atau informasi teknis lainnya. Verifikasi debug mode dimatikan.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada informasi teknis yang terekspos melalui pesan error pada pengujian, custom error page aktif di semua environment production.
+<EvaluasiCard type="eek">Indikator: tidak ada informasi teknis yang terekspos melalui pesan error pada pengujian, custom error page aktif di semua environment production.</EvaluasiCard>
 
 ---
 
@@ -919,11 +919,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: apakah ada global exception handler? Apakah semua operasi kritis punya error handling? Apakah tidak ada empty catch block? Pengujian: trigger berbagai skenario error — aplikasi harus tetap berjalan dengan baik.
 
-**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan implementasi comprehensive exception handling termasuk global exception handler.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan instansi mewajibkan implementasi comprehensive exception handling termasuk global exception handler.</EvaluasiCard>
 
-**EIK:** Review source code untuk memastikan semua operasi kritis punya error handling. Verifikasi global exception handler aktif. Trigger unhandled exception — aplikasi harus menangani dengan graceful.
+<EvaluasiCard type="eik">Review source code untuk memastikan semua operasi kritis punya error handling. Verifikasi global exception handler aktif. Trigger unhandled exception — aplikasi harus menangani dengan graceful.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada unhandled exception yang menyebabkan crash di production, semua error ditangani dan di-log dengan benar.
+<EvaluasiCard type="eek">Indikator: tidak ada unhandled exception yang menyebabkan crash di production, semua error ditangani dan di-log dengan benar.</EvaluasiCard>
 
 ---
 
@@ -943,11 +943,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Review sample log file: verifikasi tidak ada password, token, atau data sensitif yang tercatat; konfigurasi log masking/filtering; kebijakan pengelolaan log.
 
-**EDK:** Tinjau apakah kebijakan instansi melarang pencatatan data sensitif/dikecualikan dalam log dan mengatur mekanisme masking/redacting.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi melarang pencatatan data sensitif/dikecualikan dalam log dan mengatur mekanisme masking/redacting.</EvaluasiCard>
 
-**EIK:** Review sample log: apakah ada password, token, atau data pribadi sensitif yang tercatat? Verifikasi log masking aktif untuk field sensitif.
+<EvaluasiCard type="eik">Review sample log: apakah ada password, token, atau data pribadi sensitif yang tercatat? Verifikasi log masking aktif untuk field sensitif.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ditemukan data sensitif dalam log file, log masking berjalan dengan benar untuk semua field yang dikategorikan sensitif.
+<EvaluasiCard type="eek">Indikator: tidak ditemukan data sensitif dalam log file, log masking berjalan dengan benar untuk semua field yang dikategorikan sensitif.</EvaluasiCard>
 
 ---
 
@@ -969,11 +969,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi logging yang menunjukkan event apa saja yang dicatat; sample log yang menunjukkan kelengkapan field (timestamp, user, IP, action, result); kebijakan retensi log; SOP response insiden yang mengacu pada log.
 
-**EDK:** Tinjau apakah kebijakan instansi mendefinisikan cakupan minimum log yang harus dicatat (jenis event, field yang wajib ada, durasi retensi).
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mendefinisikan cakupan minimum log yang harus dicatat (jenis event, field yang wajib ada, durasi retensi).</EvaluasiCard>
 
-**EIK:** Review konfigurasi logging dan sample log: apakah semua event keamanan penting dicatat? Apakah setiap entry mengandung timestamp, user, IP, dan detail action?
+<EvaluasiCard type="eik">Review konfigurasi logging dan sample log: apakah semua event keamanan penting dicatat? Apakah setiap entry mengandung timestamp, user, IP, dan detail action?</EvaluasiCard>
 
-**EEK:** Indikator: log mencukupi untuk mendukung investigasi insiden (simulasikan skenario insiden dan cek apakah buktinya ada di log), retensi log sesuai kebijakan.
+<EvaluasiCard type="eek">Indikator: log mencukupi untuk mendukung investigasi insiden (simulasikan skenario insiden dan cek apakah buktinya ada di log), retensi log sesuai kebijakan.</EvaluasiCard>
 
 ---
 
@@ -993,11 +993,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi sistem logging terpusat (SIEM/log aggregator); permission file log (hanya append, tidak writable oleh proses aplikasi); bukti log dikirim ke sistem eksternal yang terpisah.
 
-**EDK:** Tinjau apakah kebijakan instansi mengatur perlindungan integritas dan kerahasiaan log, termasuk pembatasan akses dan mekanisme centralized logging.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mengatur perlindungan integritas dan kerahasiaan log, termasuk pembatasan akses dan mekanisme centralized logging.</EvaluasiCard>
 
-**EIK:** Verifikasi konfigurasi akses log: apakah log hanya bisa diakses oleh pihak berwenang? Apakah log dikirim ke sistem terpusat? Verifikasi log tidak bisa dihapus oleh proses aplikasi biasa.
+<EvaluasiCard type="eik">Verifikasi konfigurasi akses log: apakah log hanya bisa diakses oleh pihak berwenang? Apakah log dikirim ke sistem terpusat? Verifikasi log tidak bisa dihapus oleh proses aplikasi biasa.</EvaluasiCard>
 
-**EEK:** Indikator: log tidak bisa dimodifikasi atau dihapus oleh penyerang yang berhasil masuk ke server aplikasi, centralized logging aktif dan berfungsi.
+<EvaluasiCard type="eek">Indikator: log tidak bisa dimodifikasi atau dihapus oleh penyerang yang berhasil masuk ke server aplikasi, centralized logging aktif dan berfungsi.</EvaluasiCard>
 
 ---
 
@@ -1014,7 +1014,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi structured logging (JSON format); bukti sanitasi input sebelum logging; enkripsi log aktif jika diterapkan.
 
-**EDK/EIK/EEK:** Sama seperti kontrol log lainnya — fokus pada apakah structured logging dan sanitasi input ke log sudah diterapkan.
+<EvaluasiAllCard>Sama seperti kontrol log lainnya — fokus pada apakah structured logging dan sanitasi input ke log sudah diterapkan.</EvaluasiAllCard>
 
 ---
 
@@ -1033,11 +1033,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi NTP pada semua server; verifikasi sinkronisasi waktu aktif (`timedatectl status`, `ntpstat`); log menunjukkan timestamp yang konsisten dan akurat.
 
-**EDK:** Tinjau apakah kebijakan instansi mewajibkan sinkronisasi waktu menggunakan NTP pada semua server yang menjalankan aplikasi SPBE.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mewajibkan sinkronisasi waktu menggunakan NTP pada semua server yang menjalankan aplikasi SPBE.</EvaluasiCard>
 
-**EIK:** Verifikasi konfigurasi NTP aktif di setiap server. Bandingkan timestamp log antar server — apakah konsisten?
+<EvaluasiCard type="eik">Verifikasi konfigurasi NTP aktif di setiap server. Bandingkan timestamp log antar server — apakah konsisten?</EvaluasiCard>
 
-**EEK:** Indikator: semua server tersinkronisasi ke NTP dengan drift < 1 detik, timestamp log konsisten dan akurat di semua server.
+<EvaluasiCard type="eek">Indikator: semua server tersinkronisasi ke NTP dengan drift < 1 detik, timestamp log konsisten dan akurat di semua server.</EvaluasiCard>
 
 ---
 
@@ -1062,11 +1062,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Data classification policy; inventaris data (data catalog); bukti enkripsi data sensitif at rest; prosedur backup yang mencakup enkripsi.
 
-**EDK:** Tinjau apakah instansi memiliki kebijakan klasifikasi data dan inventaris data yang dikecualikan, termasuk persyaratan enkripsi untuk penyimpanannya.
+<EvaluasiCard type="edk">Tinjau apakah instansi memiliki kebijakan klasifikasi data dan inventaris data yang dikecualikan, termasuk persyaratan enkripsi untuk penyimpanannya.</EvaluasiCard>
 
-**EIK:** Verifikasi apakah data sensitif di database dienkripsi (field-level atau full encryption). Periksa prosedur backup apakah mencakup enkripsi.
+<EvaluasiCard type="eik">Verifikasi apakah data sensitif di database dienkripsi (field-level atau full encryption). Periksa prosedur backup apakah mencakup enkripsi.</EvaluasiCard>
 
-**EEK:** Indikator: semua data yang terklasifikasi sensitif/dikecualikan tersimpan dalam bentuk terenkripsi, backup dienkripsi dan disimpan aman.
+<EvaluasiCard type="eek">Indikator: semua data yang terklasifikasi sensitif/dikecualikan tersimpan dalam bentuk terenkripsi, backup dienkripsi dan disimpan aman.</EvaluasiCard>
 
 ---
 
@@ -1083,7 +1083,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi Redis/cache dengan autentikasi dan enkripsi; TTL yang wajar pada cache data sensitif; prosedur cleanup temporary file.
 
-**EDK/EIK/EEK:** Tinjau dan verifikasi konfigurasi cache, kebijakan TTL, dan prosedur pembersihan temporary data sensitif.
+<EvaluasiAllCard>Tinjau dan verifikasi konfigurasi cache, kebijakan TTL, dan prosedur pembersihan temporary data sensitif.</EvaluasiAllCard>
 
 ---
 
@@ -1100,7 +1100,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** SOP pertukaran data sensitif; prosedur secure deletion; audit log pertukaran dan penghapusan data; prosedur penanganan hak hapus pengguna.
 
-**EDK/EIK/EEK:** Tinjau kebijakan dan prosedur pertukaran/penghapusan data; verifikasi implementasi secure deletion; review audit log pertukaran data.
+<EvaluasiAllCard>Tinjau kebijakan dan prosedur pertukaran/penghapusan data; verifikasi implementasi secure deletion; review audit log pertukaran data.</EvaluasiAllCard>
 
 ---
 
@@ -1116,7 +1116,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: apakah ada allowlist field untuk setiap form/endpoint? Pengujian mass assignment: kirim parameter tambahan yang tidak seharusnya bisa diubah — sistem harus mengabaikannya.
 
-**EDK/EIK/EEK:** Tinjau standar pengembangan terkait mass assignment prevention; uji endpoint dengan parameter tambahan; verifikasi allowlist field aktif.
+<EvaluasiAllCard>Tinjau standar pengembangan terkait mass assignment prevention; uji endpoint dengan parameter tambahan; verifikasi allowlist field aktif.</EvaluasiAllCard>
 
 ---
 
@@ -1134,7 +1134,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi database (network binding, akses terbatas, enkripsi at rest); bukti enkripsi backup; kebijakan retensi data.
 
-**EDK/EIK/EEK:** Tinjau konfigurasi database dan kebijakan penyimpanan; verifikasi enkripsi at rest dan backup; periksa network exposure database.
+<EvaluasiAllCard>Tinjau konfigurasi database dan kebijakan penyimpanan; verifikasi enkripsi at rest dan backup; periksa network exposure database.</EvaluasiAllCard>
 
 ---
 
@@ -1151,7 +1151,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Fitur hapus/ekspor data yang tersedia di aplikasi; SOP penanganan permintaan hak subjek data; audit log permintaan dan eksekusi hapus/ekspor data.
 
-**EDK/EIK/EEK:** Tinjau apakah sistem menyediakan mekanisme hapus/ekspor data sesuai UU PDP; uji fungsi hapus dan ekspor; verifikasi audit trail tersedia.
+<EvaluasiAllCard>Tinjau apakah sistem menyediakan mekanisme hapus/ekspor data sesuai UU PDP; uji fungsi hapus dan ekspor; verifikasi audit trail tersedia.</EvaluasiAllCard>
 
 ---
 
@@ -1169,7 +1169,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Code review pada penanganan data sensitif di memori; konfigurasi core dump (dinonaktifkan di production); enkripsi swap jika digunakan.
 
-**EDK/EIK/EEK:** Tinjau kebijakan dan implementasi pembersihan memori untuk data sensitif; verifikasi core dump dinonaktifkan; review kode penanganan data sensitif.
+<EvaluasiAllCard>Tinjau kebijakan dan implementasi pembersihan memori untuk data sensitif; verifikasi core dump dinonaktifkan; review kode penanganan data sensitif.</EvaluasiAllCard>
 
 ---
 
@@ -1195,11 +1195,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi TLS di semua layer (web, database, inter-service); scan port yang menunjukkan tidak ada layanan yang berjalan di plain text untuk data sensitif; konfigurasi VPN untuk akses remote.
 
-**EDK:** Tinjau apakah kebijakan instansi mewajibkan enkripsi untuk semua jenis komunikasi yang membawa data sensitif.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mewajibkan enkripsi untuk semua jenis komunikasi yang membawa data sensitif.</EvaluasiCard>
 
-**EIK:** Verifikasi TLS aktif di semua layer komunikasi: web (HTTPS), database (SSL connection string), API internal. Scan untuk layanan yang menggunakan plain text.
+<EvaluasiCard type="eik">Verifikasi TLS aktif di semua layer komunikasi: web (HTTPS), database (SSL connection string), API internal. Scan untuk layanan yang menggunakan plain text.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada komunikasi data sensitif yang terjadi tanpa enkripsi, semua koneksi menggunakan TLS 1.2+.
+<EvaluasiCard type="eek">Indikator: tidak ada komunikasi data sensitif yang terjadi tanpa enkripsi, semua koneksi menggunakan TLS 1.2+.</EvaluasiCard>
 
 ---
 
@@ -1216,7 +1216,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi outbound connection (verifikasi sertifikat aktif); firewall rules untuk inbound/outbound traffic; konfigurasi HTTPS-only untuk aplikasi.
 
-**EDK/EIK/EEK:** Tinjau kebijakan koneksi masuk/keluar; verifikasi konfigurasi outbound connection dengan SSL verification aktif; uji redirect HTTP ke HTTPS.
+<EvaluasiAllCard>Tinjau kebijakan koneksi masuk/keluar; verifikasi konfigurasi outbound connection dengan SSL verification aktif; uji redirect HTTP ke HTTPS.</EvaluasiAllCard>
 
 ---
 
@@ -1234,7 +1234,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi cipher suite di web server; hasil SSL Labs (grade A minimal); hasil testssl.sh; kebijakan yang mendefinisikan algoritma yang diizinkan dan dilarang.
 
-**EDK/EIK/EEK:** Tinjau kebijakan cipher suite yang berlaku; scan TLS konfigurasi dengan SSL Labs; verifikasi tidak ada cipher lemah yang diaktifkan.
+<EvaluasiAllCard>Tinjau kebijakan cipher suite yang berlaku; scan TLS konfigurasi dengan SSL Labs; verifikasi tidak ada cipher lemah yang diaktifkan.</EvaluasiAllCard>
 
 ---
 
@@ -1252,11 +1252,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Sertifikat SSL yang valid dari PSrE yang diakui; monitoring expiry sertifikat; prosedur pembaruan sertifikat; konfigurasi OCSP stapling.
 
-**EDK:** Tinjau apakah kebijakan instansi mengatur penggunaan sertifikat elektronik dari PSrE yang diakui, termasuk prosedur pembaruan dan monitoring expiry.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mengatur penggunaan sertifikat elektronik dari PSrE yang diakui, termasuk prosedur pembaruan dan monitoring expiry.</EvaluasiCard>
 
-**EIK:** Verifikasi sertifikat yang digunakan: diterbitkan oleh CA yang diakui, masa berlaku masih valid, domain sesuai. Verifikasi monitoring expiry aktif.
+<EvaluasiCard type="eik">Verifikasi sertifikat yang digunakan: diterbitkan oleh CA yang diakui, masa berlaku masih valid, domain sesuai. Verifikasi monitoring expiry aktif.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada sertifikat yang kedaluwarsa di production, ada proses otomatis pembaruan atau alert expiry, sertifikat dari PSrE yang diakui.
+<EvaluasiCard type="eek">Indikator: tidak ada sertifikat yang kedaluwarsa di production, ada proses otomatis pembaruan atau alert expiry, sertifikat dari PSrE yang diakui.</EvaluasiCard>
 
 ---
 
@@ -1282,11 +1282,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi SAST tools dalam CI/CD pipeline; laporan hasil SAST scan; prosedur code review (pull request policy); hasil secret scanning.
 
-**EDK:** Tinjau apakah instansi memiliki kebijakan yang mewajibkan analisis kode keamanan (SAST) dan code review dalam proses pengembangan aplikasi.
+<EvaluasiCard type="edk">Tinjau apakah instansi memiliki kebijakan yang mewajibkan analisis kode keamanan (SAST) dan code review dalam proses pengembangan aplikasi.</EvaluasiCard>
 
-**EIK:** Verifikasi SAST tools aktif di CI/CD pipeline. Review proses code review (apakah ada mandatory peer review?). Cek laporan SAST terbaru.
+<EvaluasiCard type="eik">Verifikasi SAST tools aktif di CI/CD pipeline. Review proses code review (apakah ada mandatory peer review?). Cek laporan SAST terbaru.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada kerentanan kritis yang lolos ke production tanpa di-address, semua kode melalui code review dan SAST sebelum di-deploy.
+<EvaluasiCard type="eek">Indikator: tidak ada kerentanan kritis yang lolos ke production tanpa di-address, semua kode melalui code review dan SAST sebelum di-deploy.</EvaluasiCard>
 
 ---
 
@@ -1304,7 +1304,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Lock file dependencies dengan hash verification; SBOM (Software Bill of Materials); hasil dependency vulnerability scan; proses verifikasi checksum saat download library.
 
-**EDK/EIK/EEK:** Tinjau kebijakan dan implementasi supply chain security; verifikasi lock file dan checksum; review SBOM; cek proses audit dependency.
+<EvaluasiAllCard>Tinjau kebijakan dan implementasi supply chain security; verifikasi lock file dan checksum; review SBOM; cek proses audit dependency.</EvaluasiAllCard>
 
 ---
 
@@ -1322,7 +1322,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Dokumentasi permission yang diminta aplikasi dan alasannya; implementasi just-in-time permission request; kebijakan privasi yang jelas.
 
-**EDK/EIK/EEK:** Tinjau daftar permission yang diminta aplikasi; verifikasi permission diminta secara kontekstual (bukan sekaligus di awal); uji kemampuan pengguna mencabut permission.
+<EvaluasiAllCard>Tinjau daftar permission yang diminta aplikasi; verifikasi permission diminta secara kontekstual (bukan sekaligus di awal); uji kemampuan pengguna mencabut permission.</EvaluasiAllCard>
 
 ---
 
@@ -1340,7 +1340,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi FIM tools yang aktif; proses code signing untuk deployment artifact; konfigurasi SRI untuk asset eksternal; alert jika ada perubahan file yang tidak diotorisasi.
 
-**EDK/EIK/EEK:** Tinjau kebijakan integritas kode; verifikasi FIM aktif di server production; periksa SRI pada asset eksternal; simulasi perubahan file — apakah alert terpicu?
+<EvaluasiAllCard>Tinjau kebijakan integritas kode; verifikasi FIM aktif di server production; periksa SRI pada asset eksternal; simulasi perubahan file — apakah alert terpicu?</EvaluasiAllCard>
 
 ---
 
@@ -1359,7 +1359,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Prosedur change management untuk update; konfigurasi staging environment; rollback procedure; proses verifikasi update sebelum deployment.
 
-**EDK/EIK/EEK:** Tinjau kebijakan change management; verifikasi adanya staging environment; uji prosedur rollback; periksa apakah update diverifikasi sebelum deployment.
+<EvaluasiAllCard>Tinjau kebijakan change management; verifikasi adanya staging environment; uji prosedur rollback; periksa apakah update diverifikasi sebelum deployment.</EvaluasiAllCard>
 
 ---
 
@@ -1386,11 +1386,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Dokumentasi state machine/flowchart alur bisnis; pengujian skip-step (coba langsung ke langkah akhir tanpa langkah sebelumnya — harus ditolak); implementasi timing validation.
 
-**EDK:** Tinjau apakah SOP/dokumentasi teknis mendefinisikan alur logika bisnis yang harus diikuti dan mekanisme enforcement-nya di sistem.
+<EvaluasiCard type="edk">Tinjau apakah SOP/dokumentasi teknis mendefinisikan alur logika bisnis yang harus diikuti dan mekanisme enforcement-nya di sistem.</EvaluasiCard>
 
-**EIK:** Uji bypass alur bisnis: coba langsung submit tanpa melewati tahapan wajib — sistem harus menolak. Uji race condition pada proses yang rentan.
+<EvaluasiCard type="eik">Uji bypass alur bisnis: coba langsung submit tanpa melewati tahapan wajib — sistem harus menolak. Uji race condition pada proses yang rentan.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada temuan business logic bypass pada pentest, race condition tidak dapat dieksploitasi.
+<EvaluasiCard type="eek">Indikator: tidak ada temuan business logic bypass pada pentest, race condition tidak dapat dieksploitasi.</EvaluasiCard>
 
 ---
 
@@ -1406,7 +1406,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Dokumentasi business rules yang diimplementasikan; source code review: validasi batasan di server; pengujian edge case (input di batas minimum/maksimum, input negatif, dsb.).
 
-**EDK/EIK/EEK:** Tinjau dokumentasi business rules; uji batasan dan validasi dengan input edge case; verifikasi validasi ada di server.
+<EvaluasiAllCard>Tinjau dokumentasi business rules; uji batasan dan validasi dengan input edge case; verifikasi validasi ada di server.</EvaluasiAllCard>
 
 ---
 
@@ -1423,7 +1423,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi monitoring/alerting untuk aktivitas tidak biasa; integrasi dengan SIEM; laporan anomali yang terdeteksi; SOP response terhadap alert anomali.
 
-**EDK/EIK/EEK:** Tinjau mekanisme monitoring dan alerting; verifikasi SIEM integration; simulasikan aktivitas tidak biasa — apakah alert terpicu?
+<EvaluasiAllCard>Tinjau mekanisme monitoring dan alerting; verifikasi SIEM integration; simulasikan aktivitas tidak biasa — apakah alert terpicu?</EvaluasiAllCard>
 
 ---
 
@@ -1441,7 +1441,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi CAPTCHA pada form kritis; konfigurasi rate limiting per aksi bisnis; implementasi honeypot jika ada; laporan bot detection.
 
-**EDK/EIK/EEK:** Tinjau implementasi anti-otomatisasi; verifikasi CAPTCHA aktif pada form kritis; uji rate limiting per aksi; coba simulasi bot — apakah terdeteksi dan diblokir?
+<EvaluasiAllCard>Tinjau implementasi anti-otomatisasi; verifikasi CAPTCHA aktif pada form kritis; uji rate limiting per aksi; coba simulasi bot — apakah terdeteksi dan diblokir?</EvaluasiAllCard>
 
 ---
 
@@ -1459,7 +1459,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi alerting system; bukti notifikasi diterima saat simulasi serangan; SOP response insiden; sistem escalation policy.
 
-**EDK/EIK/EEK:** Tinjau kebijakan alerting dan incident response; simulasikan serangan otomatis — apakah alert diterima tim? Verifikasi escalation policy.
+<EvaluasiAllCard>Tinjau kebijakan alerting dan incident response; simulasikan serangan otomatis — apakah alert diterima tim? Verifikasi escalation policy.</EvaluasiAllCard>
 
 ---
 
@@ -1484,11 +1484,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi limit upload di web server dan aplikasi; kebijakan kuota per pengguna; pengujian: upload file melebihi batas — server harus menolak dengan pesan yang jelas.
 
-**EDK:** Tinjau apakah kebijakan instansi mendefinisikan batasan ukuran dan kuota file upload per pengguna.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mendefinisikan batasan ukuran dan kuota file upload per pengguna.</EvaluasiCard>
 
-**EIK:** Uji upload file melebihi batas yang ditentukan — server harus menolak. Verifikasi batasan dikonfigurasi di sisi server (bukan hanya client-side).
+<EvaluasiCard type="eik">Uji upload file melebihi batas yang ditentukan — server harus menolak. Verifikasi batasan dikonfigurasi di sisi server (bukan hanya client-side).</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada insiden resource exhaustion akibat upload file tidak terbatas, batasan berfungsi konsisten di semua endpoint upload.
+<EvaluasiCard type="eek">Indikator: tidak ada insiden resource exhaustion akibat upload file tidak terbatas, batasan berfungsi konsisten di semua endpoint upload.</EvaluasiCard>
 
 ---
 
@@ -1508,11 +1508,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: validasi menggunakan magic bytes bukan hanya ekstensi; konfigurasi penyimpanan file di luar webroot; pengujian: upload file executable yang disamarkan sebagai PDF — server harus menolak.
 
-**EDK:** Tinjau apakah standar pengembangan instansi mewajibkan validasi file upload menggunakan pemeriksaan tipe konten aktual (magic bytes) dan allowlist ekstensi.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan instansi mewajibkan validasi file upload menggunakan pemeriksaan tipe konten aktual (magic bytes) dan allowlist ekstensi.</EvaluasiCard>
 
-**EIK:** Uji upload file berbahaya yang disamarkan (ganti ekstensi PHP menjadi .jpg, dsb.) — server harus menolak berdasarkan konten aktual, bukan hanya ekstensi.
+<EvaluasiCard type="eik">Uji upload file berbahaya yang disamarkan (ganti ekstensi PHP menjadi .jpg, dsb.) — server harus menolak berdasarkan konten aktual, bukan hanya ekstensi.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada web shell atau file berbahaya yang berhasil di-upload dan dieksekusi pada pentest.
+<EvaluasiCard type="eek">Indikator: tidak ada web shell atau file berbahaya yang berhasil di-upload dan dieksekusi pada pentest.</EvaluasiCard>
 
 ---
 
@@ -1529,7 +1529,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Implementasi metadata stripping sebelum file disimpan/dipublikasikan; pengujian: upload foto, download — apakah EXIF data sudah dihapus?; kebijakan pengelolaan metadata file.
 
-**EDK/EIK/EEK:** Tinjau kebijakan pengelolaan metadata file; verifikasi implementasi metadata stripping; uji dengan file yang mengandung metadata sensitif.
+<EvaluasiAllCard>Tinjau kebijakan pengelolaan metadata file; verifikasi implementasi metadata stripping; uji dengan file yang mengandung metadata sensitif.</EvaluasiAllCard>
 
 ---
 
@@ -1546,11 +1546,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi antivirus scanning di pipeline upload; log hasil scan (file yang ditolak karena virus); dokumentasi integrasi AV engine.
 
-**EDK:** Tinjau apakah kebijakan instansi mewajibkan pemindaian antivirus/malware untuk semua file yang diunggah pengguna.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan instansi mewajibkan pemindaian antivirus/malware untuk semua file yang diunggah pengguna.</EvaluasiCard>
 
-**EIK:** Verifikasi antivirus scanning aktif di pipeline upload. Uji dengan file EICAR test file — sistem harus mendeteksi dan menolak.
+<EvaluasiCard type="eik">Verifikasi antivirus scanning aktif di pipeline upload. Uji dengan file EICAR test file — sistem harus mendeteksi dan menolak.</EvaluasiCard>
 
-**EEK:** Indikator: semua file yang di-upload dipindai sebelum disimpan, malware terdeteksi dan di-quarantine, tidak ada file berbahaya yang lolos ke penyimpanan production.
+<EvaluasiCard type="eek">Indikator: semua file yang di-upload dipindai sebelum disimpan, malware terdeteksi dan di-quarantine, tidak ada file berbahaya yang lolos ke penyimpanan production.</EvaluasiCard>
 
 ---
 
@@ -1568,7 +1568,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi web server (Nginx/Apache) untuk direktori file upload; pengujian: upload file PHP, akses via URL — server harus mengembalikan file sebagai download, bukan mengeksekusinya; verifikasi Content-Disposition header.
 
-**EDK/EIK/EEK:** Tinjau konfigurasi server untuk file download; verifikasi Content-Disposition header aktif; uji akses langsung ke file yang di-upload.
+<EvaluasiAllCard>Tinjau konfigurasi server untuk file download; verifikasi Content-Disposition header aktif; uji akses langsung ke file yang di-upload.</EvaluasiAllCard>
 
 ---
 
@@ -1595,11 +1595,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi web server (Nginx/Apache config); hasil scan headers menggunakan securityheaders.com; verifikasi CORS policy; hardening checklist.
 
-**EDK:** Tinjau apakah standar konfigurasi server instansi mengacu pada hardening guide yang diakui (CIS Benchmark, OWASP).
+<EvaluasiCard type="edk">Tinjau apakah standar konfigurasi server instansi mengacu pada hardening guide yang diakui (CIS Benchmark, OWASP).</EvaluasiCard>
 
-**EIK:** Periksa konfigurasi web server: CORS, HTTP methods yang diizinkan, directory listing, server header. Gunakan tools seperti Nikto, securityheaders.com.
+<EvaluasiCard type="eik">Periksa konfigurasi web server: CORS, HTTP methods yang diizinkan, directory listing, server header. Gunakan tools seperti Nikto, securityheaders.com.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada konfigurasi default yang tidak aman, CORS terkonfigurasi ketat, directory listing dinonaktifkan.
+<EvaluasiCard type="eek">Indikator: tidak ada konfigurasi default yang tidak aman, CORS terkonfigurasi ketat, directory listing dinonaktifkan.</EvaluasiCard>
 
 ---
 
@@ -1617,7 +1617,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Review desain URL API; verifikasi tidak ada informasi sensitif di URL; uji IDOR dengan enumerate ID; review API documentation apakah tidak mengekspos informasi berlebihan.
 
-**EDK/EIK/EEK:** Tinjau desain URL API; uji IDOR; verifikasi tidak ada informasi teknis yang terekspos di URL.
+<EvaluasiAllCard>Tinjau desain URL API; uji IDOR; verifikasi tidak ada informasi teknis yang terekspos di URL.</EvaluasiAllCard>
 
 ---
 
@@ -1634,7 +1634,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: setiap endpoint memiliki authorization check; pengujian BOLA dan BFLA; dokumentasi authorization matrix.
 
-**EDK/EIK/EEK:** Tinjau authorization matrix API; uji akses endpoint tanpa otorisasi yang tepat; uji BOLA dengan mengakses resource milik user lain.
+<EvaluasiAllCard>Tinjau authorization matrix API; uji akses endpoint tanpa otorisasi yang tepat; uji BOLA dengan mengakses resource milik user lain.</EvaluasiAllCard>
 
 ---
 
@@ -1651,7 +1651,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** API documentation (OpenAPI/Swagger spec); pengujian dengan input tidak valid — apakah validasi berjalan sebelum processing?; review HTTP method yang digunakan; verifikasi status code yang dikembalikan.
 
-**EDK/EIK/EEK:** Tinjau desain API (HTTP methods, status codes); uji API dengan input tidak valid sebelum processing; verifikasi konsistensi respons.
+<EvaluasiAllCard>Tinjau desain API (HTTP methods, status codes); uji API dengan input tidak valid sebelum processing; verifikasi konsistensi respons.</EvaluasiAllCard>
 
 ---
 
@@ -1668,7 +1668,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** OpenAPI specification yang lengkap; konfigurasi JSON schema validation di API; pengujian: kirim request dengan field ekstra atau tipe data salah — harus ditolak.
 
-**EDK/EIK/EEK:** Tinjau apakah API memiliki schema validation yang terdokumentasi; uji API dengan request yang melanggar schema; verifikasi strict mode aktif.
+<EvaluasiAllCard>Tinjau apakah API memiliki schema validation yang terdokumentasi; uji API dengan request yang melanggar schema; verifikasi strict mode aktif.</EvaluasiAllCard>
 
 ---
 
@@ -1686,7 +1686,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi API Gateway; konfigurasi WAF dan rules yang aktif; bukti proteksi DDoS; mekanisme autentikasi API (API key, OAuth 2.0).
 
-**EDK/EIK/EEK:** Tinjau arsitektur keamanan API; verifikasi WAF dan API Gateway aktif; uji apakah request tanpa autentikasi ditolak; verifikasi rate limiting berfungsi.
+<EvaluasiAllCard>Tinjau arsitektur keamanan API; verifikasi WAF dan API Gateway aktif; uji apakah request tanpa autentikasi ditolak; verifikasi rate limiting berfungsi.</EvaluasiAllCard>
 
 ---
 
@@ -1704,7 +1704,7 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Konfigurasi rate limiting per endpoint; implementasi idempotency key; monitoring traffic API untuk pola bot; log penolakan request berlebihan.
 
-**EDK/EIK/EEK:** Tinjau rate limiting API; uji dengan kirim request melebihi limit; verifikasi idempotency untuk aksi kritis; simulasikan bot traffic.
+<EvaluasiAllCard>Tinjau rate limiting API; uji dengan kirim request melebihi limit; verifikasi idempotency untuk aksi kritis; simulasikan bot traffic.</EvaluasiAllCard>
 
 ---
 
@@ -1732,11 +1732,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Checklist hardening yang sudah diaplikasikan (referensi CIS Benchmark); konfigurasi framework (settings.py, .env); hasil vulnerability scan infrastruktur; bukti nonaktifnya service yang tidak diperlukan.
 
-**EDK:** Tinjau apakah instansi memiliki panduan atau kebijakan konfigurasi server yang mengacu pada standar hardening yang diakui (CIS Benchmark atau setara).
+<EvaluasiCard type="edk">Tinjau apakah instansi memiliki panduan atau kebijakan konfigurasi server yang mengacu pada standar hardening yang diakui (CIS Benchmark atau setara).</EvaluasiCard>
 
-**EIK:** Lakukan configuration review menggunakan CIS Benchmark sebagai acuan. Verifikasi service yang tidak diperlukan sudah dinonaktifkan, konfigurasi framework sudah di-hardened.
+<EvaluasiCard type="eik">Lakukan configuration review menggunakan CIS Benchmark sebagai acuan. Verifikasi service yang tidak diperlukan sudah dinonaktifkan, konfigurasi framework sudah di-hardened.</EvaluasiCard>
 
-**EEK:** Indikator: hasil configuration audit menunjukkan kepatuhan terhadap hardening guide, tidak ditemukan konfigurasi default yang tidak aman saat pentest.
+<EvaluasiCard type="eek">Indikator: hasil configuration audit menunjukkan kepatuhan terhadap hardening guide, tidak ditemukan konfigurasi default yang tidak aman saat pentest.</EvaluasiCard>
 
 ---
 
@@ -1754,11 +1754,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Repository IaC (Terraform, Ansible, Docker Compose); lock file untuk dependencies; backup konfigurasi yang terverifikasi; change log konfigurasi.
 
-**EDK:** Tinjau apakah instansi memiliki kebijakan dokumentasi konfigurasi dan penggunaan IaC atau configuration management tools.
+<EvaluasiCard type="edk">Tinjau apakah instansi memiliki kebijakan dokumentasi konfigurasi dan penggunaan IaC atau configuration management tools.</EvaluasiCard>
 
-**EIK:** Verifikasi konfigurasi terdokumentasi dalam IaC; verifikasi semua dependency terdokumentasi dengan versi yang spesifik; verifikasi backup konfigurasi tersedia.
+<EvaluasiCard type="eik">Verifikasi konfigurasi terdokumentasi dalam IaC; verifikasi semua dependency terdokumentasi dengan versi yang spesifik; verifikasi backup konfigurasi tersedia.</EvaluasiCard>
 
-**EEK:** Indikator: sistem bisa di-rebuild dari dokumentasi/IaC yang ada, tidak ada "undocumented configuration" yang hanya ada di satu server.
+<EvaluasiCard type="eek">Indikator: sistem bisa di-rebuild dari dokumentasi/IaC yang ada, tidak ada "undocumented configuration" yang hanya ada di satu server.</EvaluasiCard>
 
 ---
 
@@ -1777,11 +1777,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Tidak ada file default atau sampel yang tertinggal (cek `phpinfo.php`, `/examples`, `/demo`); semua akun default sudah diubah atau dihapus; daftar port yang terbuka menunjukkan hanya yang diperlukan; plugin/modul yang tidak digunakan sudah dinonaktifkan.
 
-**EDK:** Tinjau apakah checklist deployment instansi mencakup penghapusan fitur, dokumentasi, dan konfigurasi default yang tidak diperlukan sebelum go-live.
+<EvaluasiCard type="edk">Tinjau apakah checklist deployment instansi mencakup penghapusan fitur, dokumentasi, dan konfigurasi default yang tidak diperlukan sebelum go-live.</EvaluasiCard>
 
-**EIK:** Lakukan audit: cari file default, sampel, dan akun default. Scan port terbuka. Verifikasi debug tools tidak dapat diakses dari internet. Periksa apakah ada modul/plugin yang tidak digunakan tapi masih aktif.
+<EvaluasiCard type="eik">Lakukan audit: cari file default, sampel, dan akun default. Scan port terbuka. Verifikasi debug tools tidak dapat diakses dari internet. Periksa apakah ada modul/plugin yang tidak digunakan tapi masih aktif.</EvaluasiCard>
 
-**EEK:** Indikator: tidak ada file sampel atau akun default yang ditemukan pada pentest, semua port terbuka memiliki justifikasi yang terdokumentasi.
+<EvaluasiCard type="eek">Indikator: tidak ada file sampel atau akun default yang ditemukan pada pentest, semua port terbuka memiliki justifikasi yang terdokumentasi.</EvaluasiCard>
 
 ---
 
@@ -1804,11 +1804,11 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Source code review: semua CDN resources memiliki atribut SRI; konfigurasi Docker Content Trust; proses verifikasi checksum dependencies.
 
-**EDK:** Tinjau apakah kebijakan pengembangan instansi mewajibkan penggunaan SRI untuk aset eksternal dan verifikasi integritas dependency.
+<EvaluasiCard type="edk">Tinjau apakah kebijakan pengembangan instansi mewajibkan penggunaan SRI untuk aset eksternal dan verifikasi integritas dependency.</EvaluasiCard>
 
-**EIK:** Review source code HTML: apakah semua script/style dari CDN memiliki atribut integrity? Verifikasi Docker image signing jika menggunakan container.
+<EvaluasiCard type="eik">Review source code HTML: apakah semua script/style dari CDN memiliki atribut integrity? Verifikasi Docker image signing jika menggunakan container.</EvaluasiCard>
 
-**EEK:** Indikator: 100% aset dari CDN menggunakan SRI, tidak ada aset eksternal yang di-load tanpa verifikasi integritas.
+<EvaluasiCard type="eek">Indikator: 100% aset dari CDN menggunakan SRI, tidak ada aset eksternal yang di-load tanpa verifikasi integritas.</EvaluasiCard>
 
 ---
 
@@ -1835,8 +1835,8 @@ Kedua, memastikan bahwa aksi penting (kirim form, ubah data) benar-benar kamu ya
 
 **Bukti dukung:** Hasil scan headers menggunakan securityheaders.com (target grade A atau A+); review response headers menggunakan browser developer tools; konfigurasi web server yang menambahkan security headers.
 
-**EDK:** Tinjau apakah standar pengembangan instansi mendefinisikan security headers yang wajib dikonfigurasi pada semua aplikasi web.
+<EvaluasiCard type="edk">Tinjau apakah standar pengembangan instansi mendefinisikan security headers yang wajib dikonfigurasi pada semua aplikasi web.</EvaluasiCard>
 
-**EIK:** Scan semua aplikasi menggunakan securityheaders.com atau Mozilla Observatory. Verifikasi setiap security header yang diwajibkan ada dan terkonfigurasi dengan benar. Review konfigurasi web server yang mengatur header tersebut.
+<EvaluasiCard type="eik">Scan semua aplikasi menggunakan securityheaders.com atau Mozilla Observatory. Verifikasi setiap security header yang diwajibkan ada dan terkonfigurasi dengan benar. Review konfigurasi web server yang mengatur header tersebut.</EvaluasiCard>
 
-**EEK:** Indikator: semua aplikasi mendapat grade A minimal dari securityheaders.com, tidak ada security header kritis yang hilang, tidak ada temuan clickjacking atau header-related vulnerability pada pentest.
+<EvaluasiCard type="eek">Indikator: semua aplikasi mendapat grade A minimal dari securityheaders.com, tidak ada security header kritis yang hilang, tidak ada temuan clickjacking atau header-related vulnerability pada pentest.</EvaluasiCard>
