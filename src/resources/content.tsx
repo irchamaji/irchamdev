@@ -266,10 +266,6 @@ const about: About = {
             icon: "shield",
           },
           {
-            name: "Threat modeling",
-            icon: "bug",
-          },
-          {
             name: "Least privilege",
             icon: "lock",
           },
