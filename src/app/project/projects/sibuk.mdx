@@ -1,0 +1,94 @@
+---
+title: "SIBUK — A Deliberately Vulnerable App for Security Audit Training"
+publishedAt: "2026-11-03"
+summary: "A fictional local-government small-business licensing system, built on purpose with security flaws so auditors can practice web application security audits against real code, a live deployment, and a full map of 75 security controls."
+images:
+  - "/images/projects/sibuk/cover.jpg"
+  - "/images/projects/sibuk/login.jpg"
+  - "/images/projects/sibuk/perizinan.jpg"
+  - "/images/projects/sibuk/ajukan.jpg"
+  - "/images/projects/sibuk/admin-akun.jpg"
+  - "/images/projects/sibuk/sql-error.jpg"
+team:
+  - name: "Ircham"
+    role: "Full-Stack Developer"
+    avatar: "/images/avatar.jpg"
+    linkedIn: "https://www.linkedin.com/in/ircham/"
+link: "https://sibuk.ircham.dev/"
+---
+
+## Overview
+
+**SIBUK** (*Sistem Informasi Buka Usaha Kecil*, roughly "Small Business Opening Information System") is a web application that pretends to be a local government's licensing service for small businesses (UMKM). Citizens register, submit a business permit application, and track its status; government admins review and approve or reject them.
+
+None of it is real. The city, the agency, and the citizens are fictional. SIBUK exists for one reason: to be **audited**. It is a training target for web application security audits, and it was **built with security flaws on purpose**.
+
+The app lives at [sibuk.ircham.dev](https://sibuk.ircham.dev/), and its source code is public. Because it is vulnerable by design, it is only switched on during security audit training sessions and kept offline the rest of the time — so don't be surprised if the link is down.
+
+## Why Build a Vulnerable App?
+
+Learning to audit a web application from slides is hard. The criteria for a government web application security audit cover everything from password rules and session timeouts to error handling, logging, and file uploads — I wrote about them in [Kriteria Fungsionalitas Aplikasi Web untuk Audit Keamanan SPBE](/blog/kriteria-fungsionalitas-aplikasi-web-audit-keamanan). Reading the criteria is one thing; recognizing them in a running system is another.
+
+Existing vulnerable-by-design apps (the classic "hack this shop" kind) are great for penetration testing practice, but they don't look like the systems a government auditor actually reviews. I wanted a target that:
+
+- **Looks and behaves like a real regional government service**, with realistic roles, workflows, and Indonesian-language UI.
+- **Mixes good and bad controls.** Most of the app is built correctly with framework defaults. The flaws are specific and deliberate, so auditors have to *tell the difference* instead of assuming everything is broken.
+- **Can be audited from both sides** — black-box against the live deployment, and white-box against the source code.
+
+## The Application
+
+SIBUK has three roles:
+
+- **Pengguna (citizen)** — registers, submits business permit applications with business details, location, monthly revenue, and a supporting letter, then tracks the status (*Pengajuan → Diizinkan / Ditolak*).
+- **Admin Pemda (government admin)** — reviews all applications and approves or rejects them.
+- **Superadmin** — manages user accounts on top of everything an admin can do.
+
+Around that it has the usual building blocks of a real system: registration and login, password reset by email, account settings, role-based access control, a 30-minute idle session timeout, and account lockout after five failed login attempts.
+
+The login page shows the demo accounts for each role, so participants can jump straight into the audit.
+
+## Flaws by Design
+
+Some of the weaknesses are left in deliberately, each one mapped to a specific audit control. A few examples:
+
+- **SQL injection.** One query — the permit detail page — builds raw SQL with string concatenation instead of using the ORM like the rest of the app.
+- **Error message leakage.** That same query has no exception handling, and debug mode is on, so a malformed request shows the raw SQL error and a full stack trace.
+- **Insecure direct object references.** Permits use sequential numeric IDs in the URL, an invitation to try someone else's ID.
+- **Weak file handling.** Uploaded file names are taken as-is with no type or path validation.
+- **Missing hardening.** No Content Security Policy or other security headers, no symbols required in passwords, verbose debug logging, unencrypted session data, and no audit trail.
+
+Next to these, many controls are implemented properly: bcrypt password hashing, CSRF protection, server-side validation on every form, mass-assignment protection, session regeneration on login, and output escaping by Vue. Part of the exercise is confirming that these *do* hold.
+
+## "Where to Look": A Map for Source Code Audits
+
+The most useful part of the project for trainees is probably the README. It maps **all 75 security controls** of the audit criteria — authentication, session management, access control, input validation, cryptography, error handling and logging, data protection, communication security, malicious code, business logic, files, API security, and configuration — to the **exact files and line numbers** where each control is implemented (or not).
+
+Each entry is marked: implemented, an intentional weakness, or not implemented in the application layer at all. For controls that live outside the code, such as TLS certificates handled by Cloudflare or time sync handled by the host, the map says where an auditor should look instead.
+
+This turns the repository into a guided white-box audit: trainees can check their findings from the live app against the code, and learn where evidence for each control usually lives in a Laravel project.
+
+## Supporting Documents
+
+A real audit also reviews documents, not just code. So the fictional city behind SIBUK has its paperwork too: a decree from the head of the licensing agency establishing the system, an information security management system (SMKI) implementation report, and a report from a security awareness session for civil servants. Trainees can use them to practice checking whether policies on paper match what the application actually does.
+
+## Rules of Engagement
+
+When SIBUK is online, it is public and shared by many participants, so the README sets clear rules: testing and exploiting the flaws for learning is allowed; denial of service, destroying other users' data, attacking the underlying server, or using the app as a stepping stone to other systems is not. The goal is to keep the target available for everyone in a training session.
+
+Outside of training sessions, the app is simply turned off. A deliberately vulnerable application has no business running unattended on a server that also hosts other services, so it only comes up when there is a class to teach.
+
+## Technologies Used
+
+- **Laravel 11**: Backend, authentication, validation, and middleware.
+- **Vue.js 3 + Inertia.js**: Single-page frontend without a separate API layer.
+- **Tailwind CSS 3**: Styling.
+- **PostgreSQL 16**: Database, also used for session storage.
+- **Nginx + PHP-FPM 8.4**: Web server and runtime.
+- **Docker Compose**: Packaging for both local and production use.
+- **Cloudflare Tunnel**: Public access and TLS termination for the live deployment.
+
+## Outcome
+
+SIBUK gives web application security audit trainees something that rarely exists outside a real engagement: a realistic government-style application, a live deployment to poke at, its full source code, and an answer key that ties every control in the audit criteria to concrete lines of code.
+
+Building it was also a good reminder of how small the distance is between a secure app and a vulnerable one. Most of SIBUK is safe simply because Laravel's defaults are safe. The flaws came from a handful of shortcuts — one raw query, one debug flag, one missing header — exactly the kind of shortcuts that show up in real systems.

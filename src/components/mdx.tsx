@@ -25,6 +25,7 @@ import {
   List,
   ListItem,
   Line,
+  Tag,
 } from "@once-ui-system/core";
 
 type CustomLinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & {
@@ -162,6 +163,41 @@ function createListItem({ children }: { children: ReactNode }) {
   );
 }
 
+function EvaluasiCard({ type, children }: { type: 'edk' | 'eik' | 'eek'; children: ReactNode }) {
+  const config = {
+    edk: { label: 'EDK', desc: 'Evaluasi Desain Kontrol',       variant: 'info'    as const },
+    eik: { label: 'EIK', desc: 'Evaluasi Implementasi Kontrol', variant: 'warning' as const },
+    eek: { label: 'EEK', desc: 'Evaluasi Efektifitas Kontrol',  variant: 'success' as const },
+  }[type];
+
+  return (
+    <Card padding="16" radius="m" border="neutral-alpha-medium" marginBottom="8" marginTop="8">
+      <Column gap="8">
+        <Row gap="8" vertical="center">
+          <Tag variant={config.variant} label={config.label} size="s" />
+          <Text variant="label-default-s" onBackground="neutral-weak">{config.desc}</Text>
+        </Row>
+        <Text variant="body-default-m" style={{ lineHeight: '175%' }}>{children}</Text>
+      </Column>
+    </Card>
+  );
+}
+
+function EvaluasiAllCard({ children }: { children: ReactNode }) {
+  return (
+    <Card padding="16" radius="m" border="neutral-alpha-medium" marginBottom="8" marginTop="8">
+      <Column gap="8">
+        <Row gap="4" vertical="center">
+          <Tag variant="info"    label="EDK" size="s" />
+          <Tag variant="warning" label="EIK" size="s" />
+          <Tag variant="success" label="EEK" size="s" />
+        </Row>
+        <Text variant="body-default-m" style={{ lineHeight: '175%' }}>{children}</Text>
+      </Column>
+    </Card>
+  );
+}
+
 function createHR() {
   return (
     <Row fillWidth horizontal="center">
@@ -202,6 +238,8 @@ const components = {
   Icon,
   Media,
   SmartLink,
+  EvaluasiCard,
+  EvaluasiAllCard,
 };
 
 type CustomMDXProps = MDXRemoteProps & {

@@ -1,0 +1,115 @@
+---
+title: "Zoomy — Telegram Bot That Records Zoom Meetings"
+publishedAt: "2026-11-03"
+summary: "A self-hosted Telegram bot that joins Zoom meetings as a browser guest and records them — no Zoom account or host permission needed. Recordings are transcribed locally with Whisper, summarized by AI, and uploaded to YouTube automatically."
+images:
+  - "/images/projects/zoomy/cover.png"
+  - "/images/projects/zoomy/record-flow.png"
+  - "/images/projects/zoomy/recording.png"
+team:
+  - name: "Ircham"
+    role: "Full-Stack Developer"
+    avatar: "/images/avatar.jpg"
+    linkedIn: "https://www.linkedin.com/in/ircham/"
+link: "https://zoomy.ircham.dev/"
+---
+
+## Overview
+
+**Zoomy** is a Telegram bot that records Zoom meetings for you. Send it a Zoom link, and it joins the meeting as a regular browser guest, records the screen and audio, and sends you the result when the meeting ends — together with a transcript and an AI-written summary.
+
+It needs **no Zoom account, no host access, and no cloud recording license**. As far as Zoom is concerned, the bot is just another participant who joined from a web browser, muted and with the camera off.
+
+I built it because a lot of my work happens in online meetings I don't host. Zoom's built-in recording is only available to the host (or whoever the host allows), so if I wanted a record of what was discussed, I had to take notes by hand. Zoomy takes that job over.
+
+The source code is available at [zoomy.ircham.dev](https://zoomy.ircham.dev/).
+
+## How It Works
+
+The whole flow is driven from a Telegram chat:
+
+1. **`/record <zoom link or meeting ID>`** — shortened links (like bit.ly) are resolved automatically. If the link has no embedded passcode, the bot asks for one.
+2. **Pick a bot name and recording name** — or skip and use the defaults.
+3. **Start now or schedule it** — pick a future date and time, and the bot will join on its own. Schedules survive restarts.
+4. **The bot joins and records.** You get a screenshot when recording starts, and you can ask for a live one any time with `/peek`.
+5. **When the host ends the meeting** (or you send `/stop`), the bot leaves cleanly, saves the MP4, and reports duration and file size.
+6. **After the meeting**, the recording is uploaded to YouTube as an unlisted video, transcribed, and ready to be summarized.
+
+Multiple meetings can be recorded at the same time, each fully isolated from the others.
+
+## Under the Hood
+
+There is no Zoom SDK involved. Zoomy uses the same Zoom web client anyone can open in a browser, and treats recording as a screen-capture problem.
+
+Each recording session gets its own:
+
+- **Virtual display (Xvfb)** — a 1920×1200 screen that only exists in memory.
+- **A real Chromium browser, driven by Playwright** — it opens `zoom.us/wc/<id>/join`, fills in the name and passcode, and joins the meeting on that virtual display.
+- **Virtual audio device (PulseAudio null sink)** — the meeting's audio is routed here instead of to real speakers.
+- **FFmpeg** — captures the virtual display (`x11grab`) and the virtual audio sink, and encodes them into an H.264 MP4.
+
+A few details made the difference between "works in a demo" and "works every day":
+
+- **Browser chrome is cropped live.** After joining, the bot measures the browser toolbar height with JavaScript and bakes a crop filter into FFmpeg, so the saved video contains only the meeting — no post-processing.
+- **Fragmented MP4.** Recordings are written so that even if FFmpeg crashes or the container is killed, the file is still playable up to the last few seconds.
+- **Waits for real audio.** The bot holds the encoder until it actually hears something on the virtual sink, so you don't get ten minutes of an empty waiting room at the start of every file.
+- **Silence handling.** If a meeting goes quiet mid-way, the bot warns you with a screenshot and lets you keep recording, stop, or pause — pausing skips the silent gap entirely instead of recording a frozen frame.
+- **Meeting-end detection.** The bot watches the page for the "meeting has ended" signal, and on `/stop` it clicks Zoom's own **Leave Meeting** button so its name disappears from the participant list right away.
+- **Breakout rooms.** When the host invites the bot into a breakout room, Zoomy asks you on Telegram whether to join, and auto-joins if nobody answers.
+- **Sign-in-only meetings.** For meetings that reject guests, the bot can use a saved Zoom login session, or a host-issued authentication-exception link.
+
+## After the Meeting: Transcripts and AI Summaries
+
+A raw recording is only half useful — nobody wants to rewatch a two-hour meeting. So Zoomy keeps going after the recording stops.
+
+**Local transcription.** Every recording is transcribed with **faster-whisper**, running on the CPU of my own server — no audio is sent to a cloud speech API. The output is both a plain-text transcript and an `.srt` subtitle file with timestamps. Whisper is primed with a vocabulary of Indonesian government and cybersecurity terms, so acronyms that show up in my meetings are spelled correctly instead of being guessed.
+
+**AI summary.** From `/history`, one tap produces a structured summary in Indonesian: what the meeting was about, what was discussed, what was decided, and what the follow-ups are. Under the hood:
+
+- The timestamped subtitles are merged into roughly three-minute blocks, so the summary can point back to *when* something was said.
+- Long meetings are summarized section by section first, then combined.
+- Before summarizing, a pre-processing step looks for gaps or ambiguous references and asks me clarifying questions (which I can skip).
+- The summary streams live into Telegram, and afterwards I can keep chatting with it — ask "what was discussed around minute 30?" or request corrections.
+
+The AI runs on my ChatGPT subscription through a small private proxy, so there is no per-token API bill.
+
+## Storage: Let YouTube Hold the Files
+
+Meeting recordings are big, and Telegram bots can only upload files up to 50 MB. Storing everything on my own server forever wasn't great either.
+
+The solution: every finished recording is uploaded to my YouTube channel as an **unlisted** video, and the bot sends me the link. Seven days after a successful upload, the local copy is deleted — but only after the bot double-checks with YouTube that the video is still there and fully processed. If an upload fails, the local file is kept forever until I deal with it, with a **Retry upload** button in Telegram.
+
+## Deployment
+
+Zoomy runs in Docker on my homeserver. The server is only reachable over Tailscale, so GitHub can't push deployments to it. Instead, the server pulls: a cron job checks the repository every minute, and when there's a new commit on `main` it rebuilds and restarts the container. Deploying is just `git push`.
+
+On shutdown, the bot finishes and saves any live recordings before the container stops, so a redeploy never leaves a corrupted file behind.
+
+## Key Features
+
+- **No Zoom account required** — joins as a web guest, muted and camera off.
+- **Telegram interface** — record, stop, peek, schedule, and browse history from a chat.
+- **Scheduled recordings** — join automatically at a set time, persisted across restarts.
+- **Concurrent sessions** — each recording runs on its own virtual display and audio sink.
+- **Local transcription** — faster-whisper with domain-specific vocabulary, output as TXT and SRT.
+- **AI meeting summaries** — structured, timestamp-aware, with follow-up Q&A and corrections.
+- **YouTube upload with retention** — unlisted upload, local copy auto-deleted after verification.
+- **Robust recording** — live cropping, crash-safe MP4, audio wait, silence pause, breakout room support.
+- **Access control** — only authorized Telegram users can use the bot; each user sees only their own recordings.
+
+## Technologies Used
+
+- **Python + python-telegram-bot v22**: Bot interface and session flow.
+- **Playwright (Chromium)**: Joins the Zoom web client and watches the meeting state.
+- **Xvfb + PulseAudio**: Per-session virtual display and virtual audio device.
+- **FFmpeg**: Screen and audio capture, encoded to H.264 MP4.
+- **faster-whisper**: Local, CPU-only speech-to-text.
+- **ChatGPT Codex via CLIProxyAPI**: AI summaries, with optional web search.
+- **YouTube Data API v3**: Automatic upload of finished recordings.
+- **Docker Compose**: Packaging and deployment on a self-hosted server.
+
+## Outcome
+
+Zoomy turned "I'll take notes during the meeting" into "I'll read the summary after". I can schedule a recording for a meeting I can't attend, get a searchable transcript and a structured summary afterwards, and jump to the exact moment something was said on YouTube.
+
+It also showed me how far you can get by treating a closed platform as just a web page: no SDK, no API keys, no special permissions — just a browser on a screen nobody looks at, and a pipeline around it.

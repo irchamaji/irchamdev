@@ -101,6 +101,8 @@ export interface Home extends BasePageConfig {
   };
   /** The sub text which appears below the headline */
   subline: React.ReactNode;
+  /** Optional short line which appears below the subline */
+  tagline?: React.ReactNode;
 }
 
 /**
