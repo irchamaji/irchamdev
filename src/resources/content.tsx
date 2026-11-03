@@ -79,7 +79,7 @@ const home: Home = {
       Hi, I'm Ircham, a full stack web developer at my own working room, where I craft applications <br /> and automation tools that solve real-world problems.
 </>
   ),
-  tagline: <>AI integration? I can do that also</>,
+  tagline: <>AI integration? Sure, I do that too. Who doesn't these days?</>,
   
 };
 
