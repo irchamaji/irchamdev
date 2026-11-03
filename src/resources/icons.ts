@@ -77,7 +77,6 @@ export const iconLibrary: Record<string, IconType> = {
   tailscale: require("react-icons/si").SiTailscale,  // dynamic import to avoid tree shaking issues
   cloudflare: require("react-icons/si").SiCloudflare,  // dynamic import to avoid tree shaking issues
   shield: require("react-icons/hi2").HiOutlineShieldCheck,  // dynamic import to avoid tree shaking issues
-  bug: require("react-icons/hi2").HiOutlineBugAnt,  // dynamic import to avoid tree shaking issues
   lock: require("react-icons/hi2").HiOutlineLockClosed,  // dynamic import to avoid tree shaking issues
 };
 
