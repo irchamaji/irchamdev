@@ -71,6 +71,14 @@ export const iconLibrary: Record<string, IconType> = {
   django: require("react-icons/si").SiDjango,  // dynamic import to avoid tree shaking issues
   postgresql: require("react-icons/si").SiPostgresql,  // dynamic import to avoid tree shaking issues
   docker: require("react-icons/si").SiDocker,  // dynamic import to avoid tree shaking issues
+  swift: require("react-icons/si").SiSwift,  // dynamic import to avoid tree shaking issues
+  claude: require("react-icons/si").SiClaude,  // dynamic import to avoid tree shaking issues
+  openai: require("react-icons/si").SiOpenai,  // dynamic import to avoid tree shaking issues
+  tailscale: require("react-icons/si").SiTailscale,  // dynamic import to avoid tree shaking issues
+  cloudflare: require("react-icons/si").SiCloudflare,  // dynamic import to avoid tree shaking issues
+  shield: require("react-icons/hi2").HiOutlineShieldCheck,  // dynamic import to avoid tree shaking issues
+  bug: require("react-icons/hi2").HiOutlineBugAnt,  // dynamic import to avoid tree shaking issues
+  lock: require("react-icons/hi2").HiOutlineLockClosed,  // dynamic import to avoid tree shaking issues
 };
 
 export type IconLibrary = typeof iconLibrary;
