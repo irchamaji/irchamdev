@@ -12,7 +12,7 @@ import {
   Line,
 } from "@once-ui-system/core";
 import { home, about, person, baseURL, routes } from "@/resources";
-import { Mailchimp } from "@/components";
+import { Mailchimp, StickFight } from "@/components";
 import { Projects } from "@/components/project/Projects";
 import { Posts } from "@/components/blog/Posts";
 
@@ -113,6 +113,9 @@ export default function Home() {
           </RevealFx>
         </Column>
       </Column>
+      <RevealFx translateY="16" delay={0.6} fillWidth horizontal="center" paddingTop="40">
+        <StickFight />
+      </RevealFx>
       {/* <RevealFx translateY="16" delay={0.6}>
         <Projects range={[1, 1]} />
       </RevealFx> */}
