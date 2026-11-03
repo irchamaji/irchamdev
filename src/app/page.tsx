@@ -70,11 +70,24 @@ export default function Home() {
               {home.headline}
             </Heading>
           </RevealFx>
-          <RevealFx translateY="8" delay={0.2} fillWidth horizontal="center" paddingBottom="32">
+          <RevealFx
+            translateY="8"
+            delay={0.2}
+            fillWidth
+            horizontal="center"
+            paddingBottom={home.tagline ? "16" : "32"}
+          >
             <Text wrap="balance" onBackground="neutral-weak" variant="heading-default-xl">
               {home.subline}
             </Text>
           </RevealFx>
+          {home.tagline && (
+            <RevealFx translateY="8" delay={0.3} fillWidth horizontal="center" paddingBottom="32">
+              <Text wrap="balance" onBackground="brand-medium" variant="heading-default-l">
+                {home.tagline}
+              </Text>
+            </RevealFx>
+          )}
           <RevealFx paddingTop="12" delay={0.4} horizontal="center" paddingLeft="12">
             <Button
               id="about"
