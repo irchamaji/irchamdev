@@ -52,3 +52,26 @@
   --scheme-neutral-600-50: rgba(137,152,159,0.5);
   /*
 } */
+/* Skip link: hidden until it receives keyboard focus */
+.skip-link {
+  position: fixed;
+  top: var(--static-space-8);
+  left: var(--static-space-8);
+  z-index: 100;
+  padding: var(--static-space-8) var(--static-space-16);
+  border-radius: var(--radius-m);
+  background: var(--page-background);
+  color: var(--neutral-on-background-strong);
+  border: 1px solid var(--neutral-border-medium);
+  text-decoration: none;
+  translate: 0 calc(-100% - var(--static-space-16));
+}
+
+.skip-link:focus-visible {
+  translate: 0 0;
+}
+
+/* The skip link target takes focus programmatically; no ring on the whole page region */
+#main-content:focus {
+  outline: none;
+}

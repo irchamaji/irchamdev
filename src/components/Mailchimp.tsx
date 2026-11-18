@@ -5,47 +5,14 @@ import { Button, Heading, Input, Text, Background, Column, Row } from "@once-ui-
 import { opacity, SpacingToken } from "@once-ui-system/core";
 import { useState } from "react";
 
-function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
-  let timeout: ReturnType<typeof setTimeout>;
-  return ((...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), delay);
-  }) as T;
-}
+const EMAIL_ERROR = "Enter an email address in the format you@example.com.";
 
 export const Mailchimp: React.FC<React.ComponentProps<typeof Column>> = ({ ...flex }) => {
-  const [email, setEmail] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [touched, setTouched] = useState<boolean>(false);
 
-  const validateEmail = (email: string): boolean => {
-    if (email === "") {
-      return true;
-    }
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailPattern.test(email);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setEmail(value);
-
-    if (!validateEmail(value)) {
-      setError("Please enter a valid email address.");
-    } else {
-      setError("");
-    }
-  };
-
-  const debouncedHandleChange = debounce(handleChange, 2000);
-
-  const handleBlur = () => {
-    setTouched(true);
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email address.");
-    }
-  };
+  // Rely on the browser's own type="email" and required checks, and only show the error once
+  // the user has left the field or tried to submit, the same moments :user-invalid matches
+  const check = (input: HTMLInputElement) => setError(input.validity.valid ? "" : EMAIL_ERROR);
 
   if (newsletter.display === false) return null;
 
@@ -131,20 +98,25 @@ export const Mailchimp: React.FC<React.ComponentProps<typeof Column>> = ({ ...fl
           gap="8"
         >
           <Input
-            formNoValidate
             id="mce-EMAIL"
             name="EMAIL"
             type="email"
-            placeholder="Email"
+            label="Email"
+            autoComplete="email"
             required
-            onChange={(e) => {
-              if (error) {
-                handleChange(e);
-              } else {
-                debouncedHandleChange(e);
-              }
+            onBlur={(e) => {
+              if (e.target.value) check(e.target);
             }}
-            onBlur={handleBlur}
+            onChange={(e) => {
+              // Clear the error as soon as the value becomes valid, never raise one mid-typing
+              if (error && e.target.validity.valid) setError("");
+            }}
+            onInvalid={(e) => {
+              // Submitting counts as interaction: show our message instead of the browser bubble
+              e.preventDefault();
+              check(e.currentTarget);
+              e.currentTarget.focus();
+            }}
             errorMessage={error}
           />
           <div style={{ display: "none" }}>
@@ -156,10 +128,6 @@ export const Mailchimp: React.FC<React.ComponentProps<typeof Column>> = ({ ...fl
               value=""
               checked
             />
-          </div>
-          <div id="mce-responses" className="clearfalse">
-            <div className="response" id="mce-error-response" style={{ display: "none" }}></div>
-            <div className="response" id="mce-success-response" style={{ display: "none" }}></div>
           </div>
           <div aria-hidden="true" style={{ position: "absolute", left: "-5000px" }}>
             <input

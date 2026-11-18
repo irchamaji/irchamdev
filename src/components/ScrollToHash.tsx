@@ -7,16 +7,13 @@ export function ScrollToHash() {
   const router = useRouter();
 
   useEffect(() => {
-    // Get the hash from the URL
     const hash = window.location.hash;
-    if (hash) {
-      // Remove the '#' symbol
-      const id = hash.replace("#", "");
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-      }
-    }
+    if (!hash) return;
+    // Ids made from titles can contain spaces, which arrive percent-encoded in the hash
+    const element = document.getElementById(decodeURIComponent(hash.slice(1)));
+    if (!element) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    element.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
   }, [router]);
 
   return null;

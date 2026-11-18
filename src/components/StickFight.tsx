@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { IconButton } from "@once-ui-system/core";
 import styles from "./StickFight.module.scss";
 
 // Limb angles are absolute degrees: 0 points straight down, positive swings toward the opponent.
@@ -561,22 +562,41 @@ function HitEffects({ index, age, inverted }: { index: number; age: number; inve
 export function StickFight() {
   const ref = useRef<SVGSVGElement>(null);
   const [time, setTime] = useState(0);
+  // null until mounted: the server can't know the motion preference, so it renders the first frame
+  const [paused, setPaused] = useState<boolean | null>(null);
+  const elapsed = useRef(0);
+
+  // Default to a still frame for reduced motion; the button lets anyone opt in or out
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPaused(query.matches);
+    const onChange = () => {
+      if (query.matches) setPaused(true);
+    };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (paused !== false) return;
 
     let frame = 0;
     let start = 0;
     let visible = true;
     const tick = (now: number) => {
-      if (!start) start = now;
-      setTime((now - start) / 1000);
+      // Resume where the fight stopped, after a pause or after scrolling away
+      if (!start) start = now - elapsed.current * 1000;
+      elapsed.current = (now - start) / 1000;
+      setTime(elapsed.current);
       frame = requestAnimationFrame(tick);
     };
 
     // Only animate while the fight is on screen
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !visible) frame = requestAnimationFrame(tick);
+      if (entry.isIntersecting && !visible) {
+        start = 0;
+        frame = requestAnimationFrame(tick);
+      }
       if (!entry.isIntersecting) cancelAnimationFrame(frame);
       visible = entry.isIntersecting;
     });
@@ -587,7 +607,7 @@ export function StickFight() {
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, []);
+  }, [paused]);
 
   const { scene, last } = clock(time);
   const a = figure("a", scene);
@@ -608,34 +628,49 @@ export function StickFight() {
   }
   const [flashX, flashY] = last ? IMPACT_POINTS[last.index] : [0, 0];
 
+  const running = paused === false;
+
   return (
-    <svg ref={ref} className={styles.fight} viewBox="40 -40 230 150" role="img" aria-label="Two stick figures fighting">
-      <defs>
-        <radialGradient id="stick-fight-flash">
-          <stop offset="0.55" stopColor="var(--neutral-on-background-strong)" />
-          <stop offset="1" stopColor="var(--neutral-on-background-strong)" stopOpacity={0} />
-        </radialGradient>
-      </defs>
-      <g transform={camera}>
-        {inverted && <circle cx={flashX} cy={flashY} r={110} fill="url(#stick-fight-flash)" />}
-        <line
-          x1={50}
-          x2={260}
-          y1={GROUND + 1.5}
-          y2={GROUND + 1.5}
-          stroke={inverted ? PAPER : "var(--neutral-alpha-medium)"}
-          strokeWidth={1}
-          strokeLinecap="round"
+    <div className={styles.stage}>
+      <svg ref={ref} className={styles.fight} viewBox="40 -40 230 150" role="img" aria-label="Two stick figures fighting">
+        <defs>
+          <radialGradient id="stick-fight-flash">
+            <stop offset="0.55" stopColor="var(--neutral-on-background-strong)" />
+            <stop offset="1" stopColor="var(--neutral-on-background-strong)" stopOpacity={0} />
+          </radialGradient>
+        </defs>
+        <g transform={camera}>
+          {inverted && <circle cx={flashX} cy={flashY} r={110} fill="url(#stick-fight-flash)" />}
+          <line
+            x1={50}
+            x2={260}
+            y1={GROUND + 1.5}
+            y2={GROUND + 1.5}
+            stroke={inverted ? PAPER : "var(--neutral-alpha-medium)"}
+            strokeWidth={1}
+            strokeLinecap="round"
+          />
+          <Dust t={scene} />
+          <Blinks who="a" t={scene} color={INK} />
+          <Blinks who="b" t={scene} color={ACCENT} />
+          <Trail who="a" t={scene} color={INK} />
+          <Trail who="b" t={scene} color={ACCENT} />
+          <Fighter body={a} color={inverted ? PAPER : INK} />
+          <Fighter body={b} color={inverted ? PAPER : ACCENT} />
+          {last && last.age < 0.6 && <HitEffects index={last.index} age={last.age} inverted={inverted} />}
+        </g>
+      </svg>
+      <div className={styles.controls}>
+        <IconButton
+          icon={running ? "pause" : "play"}
+          size="s"
+          variant="tertiary"
+          aria-label={running ? "Pause animation" : "Play animation"}
+          tooltip={running ? "Pause" : "Play"}
+          tooltipPosition="left"
+          onClick={() => setPaused(running)}
         />
-        <Dust t={scene} />
-        <Blinks who="a" t={scene} color={INK} />
-        <Blinks who="b" t={scene} color={ACCENT} />
-        <Trail who="a" t={scene} color={INK} />
-        <Trail who="b" t={scene} color={ACCENT} />
-        <Fighter body={a} color={inverted ? PAPER : INK} />
-        <Fighter body={b} color={inverted ? PAPER : ACCENT} />
-        {last && last.age < 0.6 && <HitEffects index={last.index} age={last.age} inverted={inverted} />}
-      </g>
-    </svg>
+      </div>
+    </div>
   );
 }
