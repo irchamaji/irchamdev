@@ -115,6 +115,9 @@ export default async function RootLayout({
           padding="0"
           horizontal="center"
         >
+          <a href="#main-content" className="skip-link">
+            Skip to content
+          </a>
           <RevealFx fill position="absolute">
             <Background
               mask={{
@@ -159,7 +162,16 @@ export default async function RootLayout({
           </RevealFx>
           <Flex fillWidth minHeight="16" s={{ hide: true }} />
           <Header />
-          <Flex zIndex={0} fillWidth padding="l" horizontal="center" flex={1}>
+          <Flex
+            as="main"
+            id="main-content"
+            tabIndex={-1}
+            zIndex={0}
+            fillWidth
+            padding="l"
+            horizontal="center"
+            flex={1}
+          >
             <Flex horizontal="center" fillWidth minHeight="0">
               <RouteGuard>{children}</RouteGuard>
             </Flex>
